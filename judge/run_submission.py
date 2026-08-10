@@ -59,40 +59,76 @@ def run_one(submission_path, input_path):
     return logs, ("timeout" if timed_out else exit_code)
 
 
+def judge(slug, submission_path, problems_dir):
+    """Run a submission against every test case for `slug`. Returns a dict
+    with a per-test breakdown and an overall verdict, used by both the CLI
+    and the /submit API route.
+    """
+    submission_path = pathlib.Path(submission_path).resolve()
+    problems_dir = pathlib.Path(problems_dir).resolve()
+    tests_dir = problems_dir / slug / "tests"
+
+    in_files = sorted(tests_dir.glob("*.in"))
+    if not in_files:
+        return {"slug": slug, "verdict": "No Tests Found", "tests": [], "elapsed_seconds": 0}
+
+    tests = []
+    t0 = time.time()
+    for in_file in in_files:
+        expected = in_file.with_suffix(".out").read_text().strip()
+        actual, exit_code = run_one(submission_path, in_file)
+        actual = actual.strip()
+        # Grade on stdout only — tools like `grep -c` legitimately exit
+        # non-zero on "no match" even when their output is correct.
+        # exit_code is still surfaced to tell a timeout apart from a
+        # plain wrong answer.
+        passed = actual == expected and exit_code != "timeout"
+        tests.append({
+            "name": in_file.name,
+            "expected": expected,
+            "actual": actual,
+            "exit_code": exit_code,
+            "passed": passed,
+        })
+
+    if any(t["exit_code"] == "timeout" for t in tests):
+        verdict = "Timeout"
+    elif all(t["passed"] for t in tests):
+        verdict = "Accepted"
+    else:
+        verdict = "Wrong Answer"
+
+    return {
+        "slug": slug,
+        "verdict": verdict,
+        "tests": tests,
+        "elapsed_seconds": round(time.time() - t0, 2),
+    }
+
+
 def main():
     if len(sys.argv) < 3:
         print("usage: run_submission.py <slug> <submission.sh> [problems_dir]")
         sys.exit(2)
 
     slug = sys.argv[1]
-    submission = pathlib.Path(sys.argv[2]).resolve()
-    problems_dir = pathlib.Path(
-        sys.argv[3] if len(sys.argv) > 3 else "../../bashcode-problems"
-    ).resolve()
-    tests_dir = problems_dir / slug / "tests"
+    submission = sys.argv[2]
+    problems_dir = sys.argv[3] if len(sys.argv) > 3 else "../../bashcode-problems"
 
-    in_files = sorted(tests_dir.glob("*.in"))
-    if not in_files:
-        print(f"no tests found under {tests_dir}")
+    result = judge(slug, submission, problems_dir)
+    if result["verdict"] == "No Tests Found":
+        print(f"no tests found for {slug}")
         sys.exit(2)
 
-    passed = 0
-    t0 = time.time()
-    for in_file in in_files:
-        expected = in_file.with_suffix(".out").read_text().strip()
-        actual, exit_code = run_one(submission, in_file)
-        # Grade on stdout only — tools like `grep -c` legitimately exit
-        # non-zero on "no match" even when their output is correct.
-        # exit_code is still surfaced to tell a timeout/crash apart from
-        # a plain wrong answer.
-        ok = actual.strip() == expected and exit_code != "timeout"
-        passed += ok
-        print(f"[{'PASS' if ok else 'FAIL'}] {in_file.name}  "
-              f"expected={expected!r} got={actual.strip()!r} exit={exit_code}")
+    for t in result["tests"]:
+        status = "PASS" if t["passed"] else "FAIL"
+        print(f"[{status}] {t['name']}  expected={t['expected']!r} "
+              f"got={t['actual']!r} exit={t['exit_code']}")
 
-    elapsed = time.time() - t0
-    print(f"\n{passed}/{len(in_files)} passed in {elapsed:.2f}s total "
-          f"({elapsed / len(in_files):.2f}s/test)")
+    n_passed = sum(t["passed"] for t in result["tests"])
+    n_total = len(result["tests"])
+    print(f"\n{n_passed}/{n_total} passed in {result['elapsed_seconds']:.2f}s total "
+          f"({result['elapsed_seconds'] / n_total:.2f}s/test) — {result['verdict']}")
 
 
 if __name__ == "__main__":
