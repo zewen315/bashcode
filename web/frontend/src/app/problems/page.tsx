@@ -3,7 +3,7 @@ import { listProblems } from "@/lib/api";
 import { ProblemsSidebar } from "@/components/problems-sidebar";
 import { ProblemsExplorer } from "@/components/problems-explorer";
 import { ProblemsRightRail } from "@/components/problems-right-rail";
-import { MyLists } from "@/components/my-lists";
+import { Shortcuts } from "@/components/shortcuts";
 import { Widget } from "@/components/widget";
 
 export default async function ProblemsPage() {
@@ -15,9 +15,9 @@ export default async function ProblemsPage() {
         <Widget>
           <ProblemsSidebar />
         </Widget>
-        <Widget title="My Lists">
+        <Widget title="Shortcuts">
           <Suspense fallback={null}>
-            <MyLists />
+            <Shortcuts />
           </Suspense>
         </Widget>
       </aside>

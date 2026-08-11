@@ -112,21 +112,14 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <Widget title="Tools & Topics">
-        <div className="flex flex-col gap-3">
-          <div>
-            <p className="mb-1.5 text-xs font-medium text-muted-foreground">
-              Tools — what you'd reach for
-            </p>
-            <ProblemTags tags={tools} selected={tool} onSelect={setTool} />
-          </div>
-          <div>
-            <p className="mb-1.5 text-xs font-medium text-muted-foreground">
-              Topics — what you're practicing
-            </p>
-            <ProblemTags tags={topics} selected={topic} onSelect={setTopic} />
-          </div>
-        </div>
+      <Widget title="Tools" className="shrink-0">
+        <p className="mb-1.5 text-xs text-muted-foreground">What you'd reach for</p>
+        <ProblemTags tags={tools} selected={tool} onSelect={setTool} />
+      </Widget>
+
+      <Widget title="Topics" className="shrink-0">
+        <p className="mb-1.5 text-xs text-muted-foreground">What you're practicing</p>
+        <ProblemTags tags={topics} selected={topic} onSelect={setTopic} />
       </Widget>
 
       <Widget bodyClassName="flex flex-wrap items-center gap-2">

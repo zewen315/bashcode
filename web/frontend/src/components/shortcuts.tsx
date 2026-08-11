@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Star, CheckCircle2, Plus } from "lucide-react";
+import { Star, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getStarredSlugs, getAttemptedSlugs } from "@/lib/local-progress";
 
-export function MyLists() {
+export function Shortcuts() {
   const searchParams = useSearchParams();
   const activeList = searchParams.get("list");
   const [starredCount, setStarredCount] = useState<number | null>(null);
@@ -41,14 +41,6 @@ export function MyLists() {
           <span className="ml-auto text-xs text-muted-foreground">{count ?? ""}</span>
         </Link>
       ))}
-
-      <div className="mt-2 flex items-center gap-2.5 rounded-md px-3 py-2 text-sm text-muted-foreground/60">
-        <Plus className="size-4" />
-        Create a list
-        <span className="ml-auto rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
-          Soon
-        </span>
-      </div>
     </div>
   );
 }
