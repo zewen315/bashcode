@@ -44,7 +44,7 @@ import {
 } from "@/lib/local-progress";
 import { Widget } from "@/components/widget";
 import { ProblemTags } from "@/components/problem-tags";
-import { TagMultiSelect } from "@/components/tag-multi-select";
+import { TagInput } from "@/components/tag-input";
 import { cn } from "@/lib/utils";
 
 const DIFFICULTIES = ["easy", "medium", "hard"];
@@ -299,13 +299,13 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
                 </Select>
               </div>
 
-              <TagMultiSelect
+              <TagInput
                 label="Tools"
                 options={tools}
                 selected={selectedTools}
                 onChange={setSelectedTools}
               />
-              <TagMultiSelect
+              <TagInput
                 label="Topics"
                 options={topics}
                 selected={selectedTopics}

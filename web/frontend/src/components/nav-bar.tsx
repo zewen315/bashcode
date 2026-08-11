@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ListChecks, MessagesSquare, Info, MessageSquarePlus } from "lucide-react";
+import { ListChecks, MessagesSquare, Info, MessageSquarePlus, Coffee } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -55,7 +55,8 @@ export function NavBar() {
           variant="outline"
           className="ml-2"
         >
-          Donate
+          <Coffee className="size-3.5" />
+          Buy me a coffee
         </Button>
       </div>
     </header>

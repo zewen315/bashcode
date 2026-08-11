@@ -10,7 +10,7 @@ export default async function ProblemsPage() {
   const problems = await listProblems();
 
   return (
-    <main className="grid h-[calc(100vh-3rem)] grid-cols-[260px_1fr_320px] gap-4 overflow-hidden bg-muted/30 p-4">
+    <main className="grid h-[calc(100vh-5rem)] grid-cols-[260px_1fr_320px] gap-4 overflow-hidden bg-muted/30 p-4">
       <aside className="flex flex-col gap-4 overflow-y-auto">
         <Widget>
           <ProblemsSidebar />
