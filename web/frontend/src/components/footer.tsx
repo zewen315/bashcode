@@ -13,7 +13,7 @@ export function Footer() {
   return (
     <footer className="border-t bg-card">
       <div className="mx-auto grid max-w-4xl grid-cols-2 gap-8 px-6 py-10 text-sm sm:grid-cols-4">
-        <div className="flex flex-col items-center gap-2 text-center">
+        <div className="flex flex-col gap-2">
           <p className="font-semibold">Links</p>
           <Link href="/problems" className="text-muted-foreground hover:text-foreground">
             Problems
@@ -26,7 +26,7 @@ export function Footer() {
           </Link>
         </div>
 
-        <div className="flex flex-col items-center gap-2 text-center">
+        <div className="flex flex-col gap-2">
           <p className="font-semibold">Socials</p>
           {SOCIALS.map((label) => (
             <span key={label} className="text-muted-foreground">
@@ -35,7 +35,7 @@ export function Footer() {
           ))}
         </div>
 
-        <div className="flex flex-col items-center gap-2 text-center">
+        <div className="flex flex-col gap-2">
           <p className="font-semibold">Contact</p>
           <a href={FEEDBACK_MAILTO} className="text-muted-foreground hover:text-foreground">
             Feedback
@@ -48,7 +48,7 @@ export function Footer() {
           </Link>
         </div>
 
-        <div className="flex flex-col items-center gap-2 text-center">
+        <div className="flex flex-col gap-2">
           <p className="font-semibold">Legal</p>
           <Link href="/terms" className="text-muted-foreground hover:text-foreground">
             Terms

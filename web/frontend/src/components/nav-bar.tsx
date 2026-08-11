@@ -17,7 +17,7 @@ const NAV_LINKS = [
 
 export function NavBar() {
   return (
-    <header className="flex h-12 shrink-0 items-center justify-between border-b bg-card px-2 sm:px-4">
+    <header className="flex h-12 shrink-0 items-center justify-between border-b bg-primary/10 px-2 sm:px-4">
       <div className="flex items-center gap-2 sm:gap-6">
         <Link href="/problems" className="flex items-center gap-2">
           <Logo className="size-7" />
