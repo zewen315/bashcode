@@ -7,7 +7,7 @@ import {
   Bot,
   Briefcase,
   Wrench,
-  Terminal,
+  Cpu,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -23,7 +23,7 @@ const ITEMS = [
     active: false,
     children: [
       { label: "Troubleshooting", icon: Wrench },
-      { label: "Linux", icon: Terminal },
+      { label: "Linux Fundamentals", icon: Cpu },
     ],
   },
 ];
