@@ -5,11 +5,11 @@ import { cn } from "@/lib/utils";
 export function ProblemTags({
   tags,
   selected,
-  onSelect,
+  onToggle,
 }: {
   tags: string[];
-  selected: string | null;
-  onSelect: (tag: string | null) => void;
+  selected: string[];
+  onToggle: (tag: string) => void;
 }) {
   if (tags.length === 0) {
     return <p className="text-sm text-muted-foreground">No tags yet.</p>;
@@ -21,10 +21,10 @@ export function ProblemTags({
         <button
           key={tag}
           type="button"
-          onClick={() => onSelect(selected === tag ? null : tag)}
+          onClick={() => onToggle(tag)}
           className={cn(
             "shrink-0 rounded-full border px-2.5 py-1 text-xs whitespace-nowrap transition-colors",
-            selected === tag
+            selected.includes(tag)
               ? "border-primary bg-primary text-primary-foreground"
               : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
           )}

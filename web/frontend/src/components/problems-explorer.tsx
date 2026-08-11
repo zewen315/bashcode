@@ -44,15 +44,23 @@ import {
 } from "@/lib/local-progress";
 import { Widget } from "@/components/widget";
 import { ProblemTags } from "@/components/problem-tags";
+import { TagMultiSelect } from "@/components/tag-multi-select";
 import { cn } from "@/lib/utils";
 
 const DIFFICULTIES = ["easy", "medium", "hard"];
 const DIFFICULTY_RANK: Record<string, number> = { easy: 1, medium: 2, hard: 3 };
-const LIST_LABEL: Record<string, string> = {
-  starred: "Starred",
-  submitted: "Submitted",
-  unfinished: "Unfinished",
-};
+
+const PROGRESS_OPTIONS = [
+  { value: "all", label: "All" },
+  { value: "not-started", label: "Not started" },
+  { value: "submitted", label: "Submitted" },
+  { value: "unfinished", label: "Unfinished" },
+  { value: "solved", label: "Solved" },
+  { value: "starred", label: "Starred" },
+];
+const LIST_LABEL: Record<string, string> = Object.fromEntries(
+  PROGRESS_OPTIONS.map((o) => [o.value, o.label]),
+);
 
 // The platform's declared taxonomy (per the README's V1 problem
 // categories), unioned with whatever tags real problems actually have.
@@ -98,6 +106,10 @@ function SortIcon({ active, dir }: { active: boolean; dir: "asc" | "desc" }) {
   return dir === "asc" ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />;
 }
 
+function toggleInArray(arr: string[], value: string): string[] {
+  return arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value];
+}
+
 export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -105,8 +117,8 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
 
   const [query, setQuery] = useState("");
   const [difficulty, setDifficulty] = useState("all");
-  const [tool, setTool] = useState<string | null>(null);
-  const [topic, setTopic] = useState<string | null>(null);
+  const [selectedTools, setSelectedTools] = useState<string[]>([]);
+  const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [sort, setSort] = useState<Sort>(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const [solved, setSolved] = useState<Set<string>>(new Set());
@@ -131,10 +143,15 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
     router.push(`/problems/${pick.slug}`);
   }
 
+  function handleProgressChange(value: string) {
+    router.push(value === "all" ? "/problems" : `/problems?list=${value}`);
+  }
+
   function handleClearFilters() {
     setDifficulty("all");
-    setTool(null);
-    setTopic(null);
+    setSelectedTools([]);
+    setSelectedTopics([]);
+    router.push("/problems");
   }
 
   function toggleSort(key: SortKey) {
@@ -154,18 +171,26 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
     [problems],
   );
 
-  const activeFilterCount = [difficulty !== "all", !!tool, !!topic].filter(Boolean).length;
+  const activeFilterCount = [
+    difficulty !== "all",
+    selectedTools.length > 0,
+    selectedTopics.length > 0,
+    !!listFilter,
+  ].filter(Boolean).length;
 
   const filtered = problems.filter((p) => {
     const matchesQuery = p.title.toLowerCase().includes(query.toLowerCase());
     const matchesDifficulty = difficulty === "all" || p.difficulty === difficulty;
-    const matchesTool = !tool || p.tools.includes(tool);
-    const matchesTopic = !topic || p.topics.includes(topic);
+    const matchesTool = selectedTools.length === 0 || p.tools.some((t) => selectedTools.includes(t));
+    const matchesTopic =
+      selectedTopics.length === 0 || p.topics.some((t) => selectedTopics.includes(t));
     const matchesList =
       !listFilter ||
       (listFilter === "starred" && starred.has(p.slug)) ||
       (listFilter === "submitted" && attempted.has(p.slug)) ||
-      (listFilter === "unfinished" && attempted.has(p.slug) && !solved.has(p.slug));
+      (listFilter === "unfinished" && attempted.has(p.slug) && !solved.has(p.slug)) ||
+      (listFilter === "solved" && solved.has(p.slug)) ||
+      (listFilter === "not-started" && !attempted.has(p.slug));
     return matchesQuery && matchesDifficulty && matchesTool && matchesTopic && matchesList;
   });
 
@@ -185,11 +210,19 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
   return (
     <div className="flex flex-col gap-4">
       <Widget title="Tools" className="shrink-0">
-        <ProblemTags tags={tools} selected={tool} onSelect={setTool} />
+        <ProblemTags
+          tags={tools}
+          selected={selectedTools}
+          onToggle={(t) => setSelectedTools((prev) => toggleInArray(prev, t))}
+        />
       </Widget>
 
       <Widget title="Topics" className="shrink-0">
-        <ProblemTags tags={topics} selected={topic} onSelect={setTopic} />
+        <ProblemTags
+          tags={topics}
+          selected={selectedTopics}
+          onToggle={(t) => setSelectedTopics((prev) => toggleInArray(prev, t))}
+        />
       </Widget>
 
       <Widget bodyClassName="flex flex-wrap items-center gap-2">
@@ -228,50 +261,56 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
               <span className="absolute top-1 right-1 size-1.5 rounded-full bg-primary" />
             )}
           </PopoverTrigger>
-          <PopoverContent align="end" className="w-56">
-            <div className="flex flex-col gap-2">
-              <Select value={difficulty} onValueChange={(v) => setDifficulty(v ?? "all")}>
-                <SelectTrigger size="sm" className="w-full">
-                  <SelectValue placeholder="Difficulty" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All difficulties</SelectItem>
-                  {DIFFICULTIES.map((d) => (
-                    <SelectItem key={d} value={d} className="capitalize">
-                      {d}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={tool ?? "all"} onValueChange={(v) => setTool(v === "all" ? null : v)}>
-                <SelectTrigger size="sm" className="w-full">
-                  <SelectValue placeholder="Tool" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All tools</SelectItem>
-                  {tools.map((t) => (
-                    <SelectItem key={t} value={t}>
-                      {t}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select
-                value={topic ?? "all"}
-                onValueChange={(v) => setTopic(v === "all" ? null : v)}
-              >
-                <SelectTrigger size="sm" className="w-full">
-                  <SelectValue placeholder="Topic" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All topics</SelectItem>
-                  {topics.map((t) => (
-                    <SelectItem key={t} value={t}>
-                      {t}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <PopoverContent align="end" className="max-h-[70vh] w-64 overflow-y-auto">
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-muted-foreground">Difficulty</label>
+                <Select value={difficulty} onValueChange={(v) => setDifficulty(v ?? "all")}>
+                  <SelectTrigger size="sm" className="w-full">
+                    <SelectValue placeholder="Difficulty" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All difficulties</SelectItem>
+                    {DIFFICULTIES.map((d) => (
+                      <SelectItem key={d} value={d} className="capitalize">
+                        {d}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-muted-foreground">Progress</label>
+                <Select
+                  value={listFilter ?? "all"}
+                  onValueChange={(v) => handleProgressChange(v ?? "all")}
+                >
+                  <SelectTrigger size="sm" className="w-full">
+                    <SelectValue placeholder="Progress" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PROGRESS_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <TagMultiSelect
+                label="Tools"
+                options={tools}
+                selected={selectedTools}
+                onChange={setSelectedTools}
+              />
+              <TagMultiSelect
+                label="Topics"
+                options={topics}
+                selected={selectedTopics}
+                onChange={setSelectedTopics}
+              />
 
               <div className="mt-1 flex items-center justify-between gap-2">
                 <Button variant="ghost" size="sm" onClick={handleClearFilters}>
@@ -308,7 +347,7 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
                   onClick={() => toggleSort("index")}
                   className={cn(
                     "flex items-center gap-1 hover:text-foreground",
-                    sort?.key === "index" && "text-foreground",
+                    sort?.key === "index" && "font-semibold text-foreground",
                   )}
                 >
                   # <SortIcon active={sort?.key === "index"} dir={sort?.dir ?? "asc"} />
@@ -320,7 +359,7 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
                   onClick={() => toggleSort("title")}
                   className={cn(
                     "flex items-center gap-1 hover:text-foreground",
-                    sort?.key === "title" && "text-foreground",
+                    sort?.key === "title" && "font-semibold text-foreground",
                   )}
                 >
                   Problem <SortIcon active={sort?.key === "title"} dir={sort?.dir ?? "asc"} />
@@ -332,7 +371,7 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
                   onClick={() => toggleSort("difficulty")}
                   className={cn(
                     "flex items-center gap-1 hover:text-foreground",
-                    sort?.key === "difficulty" && "text-foreground",
+                    sort?.key === "difficulty" && "font-semibold text-foreground",
                   )}
                 >
                   Difficulty{" "}
