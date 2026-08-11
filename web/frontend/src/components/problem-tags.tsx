@@ -16,14 +16,14 @@ export function ProblemTags({
   }
 
   return (
-    <div className="flex flex-wrap gap-1.5">
+    <div className="scrollbar-hide flex gap-1.5 overflow-x-auto">
       {tags.map((tag) => (
         <button
           key={tag}
           type="button"
           onClick={() => onSelect(selected === tag ? null : tag)}
           className={cn(
-            "rounded-full border px-2.5 py-1 text-xs transition-colors",
+            "shrink-0 rounded-full border px-2.5 py-1 text-xs whitespace-nowrap transition-colors",
             selected === tag
               ? "border-primary bg-primary text-primary-foreground"
               : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",

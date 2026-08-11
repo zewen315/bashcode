@@ -3,24 +3,29 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Star, CheckCircle2 } from "lucide-react";
+import { Star, CheckCircle2, CircleDashed } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getStarredSlugs, getAttemptedSlugs } from "@/lib/local-progress";
+import { getStarredSlugs, getAttemptedSlugs, getSolvedSlugs } from "@/lib/local-progress";
 
 export function Shortcuts() {
   const searchParams = useSearchParams();
   const activeList = searchParams.get("list");
   const [starredCount, setStarredCount] = useState<number | null>(null);
   const [submittedCount, setSubmittedCount] = useState<number | null>(null);
+  const [unfinishedCount, setUnfinishedCount] = useState<number | null>(null);
 
   useEffect(() => {
+    const attempted = getAttemptedSlugs();
+    const solved = getSolvedSlugs();
     setStarredCount(getStarredSlugs().size);
-    setSubmittedCount(getAttemptedSlugs().size);
+    setSubmittedCount(attempted.size);
+    setUnfinishedCount([...attempted].filter((slug) => !solved.has(slug)).length);
   }, []);
 
   const items = [
     { key: "starred", label: "Starred", icon: Star, count: starredCount },
     { key: "submitted", label: "Submitted", icon: CheckCircle2, count: submittedCount },
+    { key: "unfinished", label: "Unfinished", icon: CircleDashed, count: unfinishedCount },
   ];
 
   return (
