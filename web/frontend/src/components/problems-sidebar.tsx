@@ -5,7 +5,6 @@ import {
   GraduationCap,
   BookOpenText,
   Bot,
-  Briefcase,
   Wrench,
   Cpu,
 } from "lucide-react";
@@ -17,15 +16,8 @@ const ITEMS = [
   { label: "Study Plan", icon: GraduationCap, active: false },
   { label: "Cheatsheet", icon: BookOpenText, active: false },
   { label: "AI Coding", icon: Bot, active: false },
-  {
-    label: "SRE Interview",
-    icon: Briefcase,
-    active: false,
-    children: [
-      { label: "Troubleshooting", icon: Wrench },
-      { label: "Linux Fundamentals", icon: Cpu },
-    ],
-  },
+  { label: "Troubleshooting", icon: Wrench, active: false },
+  { label: "Linux Fundamentals", icon: Cpu, active: false },
 ];
 
 function Row({
@@ -33,19 +25,16 @@ function Row({
   Icon,
   active,
   showSoon,
-  indent,
 }: {
   label: string;
   Icon: React.ComponentType<{ className?: string }>;
   active: boolean;
   showSoon: boolean;
-  indent?: boolean;
 }) {
   return (
     <span
       className={cn(
         "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm",
-        indent && "py-1.5 pl-8 text-[13px]",
         active ? "bg-accent font-medium text-accent-foreground" : "text-muted-foreground",
       )}
     >
@@ -63,28 +52,17 @@ function Row({
 export function ProblemsSidebar() {
   return (
     <nav className="flex flex-col gap-1">
-      {ITEMS.map((item) => (
-        <div key={item.label}>
-          {item.active && item.href ? (
-            <Link href={item.href}>
-              <Row label={item.label} Icon={item.icon} active showSoon={false} />
-            </Link>
-          ) : (
-            <span className="block cursor-not-allowed">
-              <Row label={item.label} Icon={item.icon} active={false} showSoon />
-            </span>
-          )}
-          {item.children && (
-            <div className="mt-0.5 flex flex-col gap-0.5">
-              {item.children.map((child) => (
-                <span key={child.label} className="block cursor-not-allowed">
-                  <Row label={child.label} Icon={child.icon} active={false} showSoon={false} indent />
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-      ))}
+      {ITEMS.map((item) =>
+        item.active && item.href ? (
+          <Link key={item.label} href={item.href}>
+            <Row label={item.label} Icon={item.icon} active showSoon={false} />
+          </Link>
+        ) : (
+          <span key={item.label} className="block cursor-not-allowed">
+            <Row label={item.label} Icon={item.icon} active={false} showSoon />
+          </span>
+        ),
+      )}
     </nav>
   );
 }
