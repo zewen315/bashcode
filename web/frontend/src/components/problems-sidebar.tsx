@@ -10,7 +10,7 @@ const ITEMS = [
 
 export function ProblemsSidebar() {
   return (
-    <nav className="flex flex-col gap-1 p-3">
+    <nav className="flex flex-col gap-1">
       {ITEMS.map((item) => {
         const Icon = item.icon;
         const content = (

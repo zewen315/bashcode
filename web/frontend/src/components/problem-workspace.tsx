@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTheme } from "next-themes";
 import Editor from "@monaco-editor/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +32,7 @@ export function ProblemWorkspace({
   slug: string;
   starterCode: string;
 }) {
+  const { resolvedTheme } = useTheme();
   const [code, setCode] = useState(starterCode);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<SubmitResult | null>(null);
@@ -63,7 +65,7 @@ export function ProblemWorkspace({
           <Editor
             height="100%"
             defaultLanguage="shell"
-            theme="vs-dark"
+            theme={resolvedTheme === "dark" ? "vs-dark" : "light"}
             value={code}
             onChange={(value) => setCode(value ?? "")}
             options={{ minimap: { enabled: false }, fontSize: 13 }}

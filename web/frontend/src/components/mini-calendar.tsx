@@ -13,7 +13,7 @@ export function MiniCalendar({ today }: { today: Date }) {
   ];
 
   return (
-    <div className="rounded-md border p-3">
+    <div>
       <p className="mb-2 text-sm font-medium">
         {monthName} {year}
       </p>

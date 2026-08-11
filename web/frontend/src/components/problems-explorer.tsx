@@ -22,6 +22,7 @@ import {
 import { type ProblemSummary } from "@/lib/api";
 import { difficultyColor } from "@/lib/difficulty";
 import { getSolvedSlugs, getStarredSlugs, toggleStarred } from "@/lib/local-progress";
+import { Widget } from "@/components/widget";
 
 const DIFFICULTIES = ["easy", "medium", "hard"];
 
@@ -56,8 +57,8 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
   });
 
   return (
-    <div className="flex flex-col gap-4 p-4">
-      <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-col gap-4">
+      <Widget bodyClassName="flex flex-wrap items-center gap-2">
         <div className="relative min-w-48 flex-1">
           <Search className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -93,9 +94,9 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
             ))}
           </SelectContent>
         </Select>
-      </div>
+      </Widget>
 
-      <div className="rounded-md border">
+      <Widget bodyClassName="p-0" className="overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
@@ -162,7 +163,7 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
             )}
           </TableBody>
         </Table>
-      </div>
+      </Widget>
     </div>
   );
 }
