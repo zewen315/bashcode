@@ -90,6 +90,11 @@ def submit(req: SubmitRequest):
     with tempfile.NamedTemporaryFile("w", suffix=".sh", delete=False, dir=SCRATCH_DIR) as f:
         f.write(req.code)
         submission_path = pathlib.Path(f.name)
+    # tempfile creates files at mode 0600 (owner-only) — but the sandbox
+    # container that reads this deliberately runs as a non-root user
+    # (65534/nobody, per the hard sandbox requirements), so it can't
+    # read an owner-only file bind-mounted from the host/backend.
+    submission_path.chmod(0o644)
 
     try:
         return judge(req.slug, submission_path, PROBLEMS_DIR)
