@@ -1,10 +1,13 @@
 import Link from "next/link";
-import { ListChecks, MessagesSquare, Info } from "lucide-react";
+import { ListChecks, MessagesSquare, Info, MessageSquarePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NotificationMenu } from "@/components/notification-menu";
 import { ProfileMenu } from "@/components/profile-menu";
+
+// TODO: swap for a dedicated support alias once one exists.
+const FEEDBACK_MAILTO = "mailto:zewen315@gmail.com?subject=BashCode%20feedback";
 
 const NAV_LINKS = [
   { label: "Problems", href: "/problems", icon: ListChecks },
@@ -35,6 +38,16 @@ export function NavBar() {
         <ThemeToggle />
         <NotificationMenu />
         <ProfileMenu />
+        <Button
+          render={<a href={FEEDBACK_MAILTO} />}
+          nativeButton={false}
+          variant="ghost"
+          size="icon"
+          className="size-8"
+          aria-label="Report a bug or send feedback"
+        >
+          <MessageSquarePlus className="size-4" />
+        </Button>
         <Button
           render={<Link href="/donate" />}
           nativeButton={false}
