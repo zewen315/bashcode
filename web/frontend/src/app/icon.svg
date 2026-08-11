@@ -1,0 +1,12 @@
+<svg width="46" height="32" viewBox="0 0 46 32" xmlns="http://www.w3.org/2000/svg">
+  <rect width="46" height="32" rx="8" fill="#0b0f0d" />
+  <text
+    x="23"
+    y="22"
+    text-anchor="middle"
+    font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+    font-size="15"
+    font-weight="700"
+    fill="#4ade80"
+  >$B_</text>
+</svg>

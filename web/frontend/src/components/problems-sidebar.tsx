@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { ListChecks, CalendarDays, GraduationCap } from "lucide-react";
+import { ListChecks, CalendarDays, GraduationCap, BookOpenText } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const ITEMS = [
   { label: "All Problems", href: "/problems", icon: ListChecks, active: true },
   { label: "Daily Question", icon: CalendarDays, active: false },
-  { label: "Study Plan", icon: GraduationCap, active: false },
+  { label: "Study Plan: BashCode 50", icon: GraduationCap, active: false },
+  { label: "Cheatsheet", icon: BookOpenText, active: false },
 ];
 
 export function ProblemsSidebar() {
