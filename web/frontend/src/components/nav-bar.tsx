@@ -17,24 +17,29 @@ const NAV_LINKS = [
 
 export function NavBar() {
   return (
-    <header className="flex h-12 shrink-0 items-center justify-between border-b bg-card px-4">
-      <div className="flex items-center gap-6">
+    <header className="flex h-12 shrink-0 items-center justify-between border-b bg-card px-2 sm:px-4">
+      <div className="flex items-center gap-2 sm:gap-6">
         <Link href="/problems" className="flex items-center gap-2">
           <Logo className="size-7" />
-          <span className="text-sm font-semibold tracking-tight">
+          <span className="hidden text-sm font-semibold tracking-tight sm:inline">
             Bash<span className="text-primary">Code</span>
           </span>
         </Link>
-        <nav className="flex items-center gap-4 text-sm text-muted-foreground">
+        <nav className="flex items-center gap-3 text-sm text-muted-foreground sm:gap-4">
           {NAV_LINKS.map(({ label, href, icon: Icon }) => (
-            <Link key={href} href={href} className="flex items-center gap-1.5 hover:text-foreground">
+            <Link
+              key={href}
+              href={href}
+              className="flex items-center gap-1.5 hover:text-foreground"
+              aria-label={label}
+            >
               <Icon className="size-3.5" />
-              {label}
+              <span className="hidden sm:inline">{label}</span>
             </Link>
           ))}
         </nav>
       </div>
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-0.5 sm:gap-1">
         <ThemeToggle />
         <NotificationMenu />
         <ProfileMenu />
@@ -53,10 +58,11 @@ export function NavBar() {
           nativeButton={false}
           size="sm"
           variant="outline"
-          className="ml-2"
+          className="ml-1 sm:ml-2"
+          aria-label="Buy me a coffee"
         >
           <Coffee className="size-3.5" />
-          Buy me a coffee
+          <span className="hidden sm:inline">Buy me a coffee</span>
         </Button>
       </div>
     </header>
