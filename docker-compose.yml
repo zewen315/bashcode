@@ -1,0 +1,69 @@
+services:
+  # Builds and tags the judge sandbox image on the host's Docker daemon.
+  # Not meant to run as a long-lived container — the backend service
+  # invokes `docker run bashcode-sandbox:latest ...` itself via the
+  # mounted socket, so this just needs to exist and be tagged.
+  sandbox-image:
+    build:
+      context: judge
+    image: bashcode-sandbox:latest
+    command: ["true"]
+    restart: "no"
+
+  backend:
+    build:
+      context: .
+      dockerfile: web/backend/Dockerfile
+    restart: unless-stopped
+    environment:
+      # Identical values as the volume targets below, deliberately — see
+      # the Docker-outside-of-Docker note in web/backend/main.py.
+      BASHCODE_PROBLEMS_DIR: ${BASHCODE_PROBLEMS_PATH}
+      BASHCODE_SCRATCH_DIR: ${BASHCODE_SCRATCH_PATH}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Source and target are the SAME absolute host path on purpose:
+      # this container's `docker run -v ...` calls go to the HOST
+      # daemon, which resolves those paths against its own filesystem,
+      # not this container's. A remapped path (e.g. ...:/problems)
+      # would work for this container's own reads but silently break
+      # every judge run, since the host daemon can't find "/problems".
+      - ${BASHCODE_PROBLEMS_PATH}:${BASHCODE_PROBLEMS_PATH}:ro
+      - ${BASHCODE_SCRATCH_PATH}:${BASHCODE_SCRATCH_PATH}
+    expose:
+      - "8000"
+    depends_on:
+      - sandbox-image
+
+  frontend:
+    build:
+      context: .
+      dockerfile: web/frontend/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+    restart: unless-stopped
+    expose:
+      - "3000"
+    depends_on:
+      - backend
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+      - backend
+
+volumes:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,6 @@
+.git
+web/frontend/node_modules
+web/frontend/.next
+web/backend/.venv
+web/backend/__pycache__
+**/__pycache__
