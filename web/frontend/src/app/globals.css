@@ -55,12 +55,12 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  /* Terminal green (same family as the logo's phosphor green), a
-     darker shade than the logo's for contrast against a light page
-     background — green-400 (used in dark mode) reads as washed-out
-     on white. */
-  --primary: oklch(0.627 0.194 149.214);
-  --primary-foreground: oklch(0.985 0 0);
+  /* Terminal green, same family as the logo. Using green-500 (higher
+     chroma than green-600 — more vivid, not just darker) with dark
+     text on top for contrast, same pattern as dark mode's primary
+     rather than a muted/toned-down shade. */
+  --primary: oklch(0.723 0.219 149.579);
+  --primary-foreground: oklch(0.15 0 0);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
@@ -70,7 +70,7 @@
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: oklch(0.627 0.194 149.214);
+  --ring: oklch(0.723 0.219 149.579);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -79,12 +79,12 @@
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.627 0.194 149.214);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.723 0.219 149.579);
+  --sidebar-primary-foreground: oklch(0.15 0 0);
   --sidebar-accent: oklch(0.97 0 0);
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.627 0.194 149.214);
+  --sidebar-ring: oklch(0.723 0.219 149.579);
 }
 
 .dark {
