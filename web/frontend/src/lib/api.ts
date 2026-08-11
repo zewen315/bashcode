@@ -5,7 +5,8 @@ export type ProblemSummary = {
   title: string;
   difficulty: string;
   category: string;
-  tags: string[];
+  tools: string[];
+  topics: string[];
 };
 
 export type ProblemDetail = ProblemSummary & {

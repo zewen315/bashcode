@@ -53,7 +53,8 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
   const [query, setQuery] = useState("");
   const [difficulty, setDifficulty] = useState("all");
   const [category, setCategory] = useState("all");
-  const [tag, setTag] = useState<string | null>(null);
+  const [tool, setTool] = useState<string | null>(null);
+  const [topic, setTopic] = useState<string | null>(null);
   const [solved, setSolved] = useState<Set<string>>(new Set());
   const [starred, setStarred] = useState<Set<string>>(new Set());
   const [attempted, setAttempted] = useState<Set<string>>(new Set());
@@ -80,8 +81,12 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
     () => Array.from(new Set(problems.map((p) => p.category))).sort(),
     [problems],
   );
-  const tags = useMemo(
-    () => Array.from(new Set(problems.flatMap((p) => p.tags))).sort(),
+  const tools = useMemo(
+    () => Array.from(new Set(problems.flatMap((p) => p.tools))).sort(),
+    [problems],
+  );
+  const topics = useMemo(
+    () => Array.from(new Set(problems.flatMap((p) => p.topics))).sort(),
     [problems],
   );
 
@@ -89,18 +94,39 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
     const matchesQuery = p.title.toLowerCase().includes(query.toLowerCase());
     const matchesDifficulty = difficulty === "all" || p.difficulty === difficulty;
     const matchesCategory = category === "all" || p.category === category;
-    const matchesTag = !tag || p.tags.includes(tag);
+    const matchesTool = !tool || p.tools.includes(tool);
+    const matchesTopic = !topic || p.topics.includes(topic);
     const matchesList =
       !listFilter ||
       (listFilter === "starred" && starred.has(p.slug)) ||
       (listFilter === "submitted" && attempted.has(p.slug));
-    return matchesQuery && matchesDifficulty && matchesCategory && matchesTag && matchesList;
+    return (
+      matchesQuery &&
+      matchesDifficulty &&
+      matchesCategory &&
+      matchesTool &&
+      matchesTopic &&
+      matchesList
+    );
   });
 
   return (
     <div className="flex flex-col gap-4">
-      <Widget title="Tags">
-        <ProblemTags tags={tags} selected={tag} onSelect={setTag} />
+      <Widget title="Tools & Topics">
+        <div className="flex flex-col gap-3">
+          <div>
+            <p className="mb-1.5 text-xs font-medium text-muted-foreground">
+              Tools — what you'd reach for
+            </p>
+            <ProblemTags tags={tools} selected={tool} onSelect={setTool} />
+          </div>
+          <div>
+            <p className="mb-1.5 text-xs font-medium text-muted-foreground">
+              Topics — what you're practicing
+            </p>
+            <ProblemTags tags={topics} selected={topic} onSelect={setTopic} />
+          </div>
+        </div>
       </Widget>
 
       <Widget bodyClassName="flex flex-wrap items-center gap-2">
