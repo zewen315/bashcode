@@ -4,7 +4,6 @@ export type ProblemSummary = {
   slug: string;
   title: string;
   difficulty: string;
-  category: string;
   tools: string[];
   topics: string[];
 };

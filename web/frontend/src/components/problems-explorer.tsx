@@ -12,6 +12,9 @@ import {
   SlidersHorizontal,
   Shuffle,
   X,
+  ChevronUp,
+  ChevronDown,
+  ChevronsUpDown,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -41,8 +44,10 @@ import {
 } from "@/lib/local-progress";
 import { Widget } from "@/components/widget";
 import { ProblemTags } from "@/components/problem-tags";
+import { cn } from "@/lib/utils";
 
 const DIFFICULTIES = ["easy", "medium", "hard"];
+const DIFFICULTY_RANK: Record<string, number> = { easy: 1, medium: 2, hard: 3 };
 const LIST_LABEL: Record<string, string> = {
   starred: "Starred",
   submitted: "Submitted",
@@ -85,6 +90,14 @@ const CANONICAL_TOPICS = [
   "user-management",
 ];
 
+type SortKey = "index" | "title" | "difficulty";
+type Sort = { key: SortKey; dir: "asc" | "desc" } | null;
+
+function SortIcon({ active, dir }: { active: boolean; dir: "asc" | "desc" }) {
+  if (!active) return <ChevronsUpDown className="size-3 text-muted-foreground/50" />;
+  return dir === "asc" ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />;
+}
+
 export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -92,9 +105,10 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
 
   const [query, setQuery] = useState("");
   const [difficulty, setDifficulty] = useState("all");
-  const [category, setCategory] = useState("all");
   const [tool, setTool] = useState<string | null>(null);
   const [topic, setTopic] = useState<string | null>(null);
+  const [sort, setSort] = useState<Sort>(null);
+  const [filterOpen, setFilterOpen] = useState(false);
   const [solved, setSolved] = useState<Set<string>>(new Set());
   const [starred, setStarred] = useState<Set<string>>(new Set());
   const [attempted, setAttempted] = useState<Set<string>>(new Set());
@@ -117,10 +131,20 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
     router.push(`/problems/${pick.slug}`);
   }
 
-  const categories = useMemo(
-    () => Array.from(new Set(problems.map((p) => p.category))).sort(),
-    [problems],
-  );
+  function handleClearFilters() {
+    setDifficulty("all");
+    setTool(null);
+    setTopic(null);
+  }
+
+  function toggleSort(key: SortKey) {
+    setSort((prev) => {
+      if (!prev || prev.key !== key) return { key, dir: "asc" };
+      if (prev.dir === "asc") return { key, dir: "desc" };
+      return null;
+    });
+  }
+
   const tools = useMemo(
     () => Array.from(new Set([...CANONICAL_TOOLS, ...problems.flatMap((p) => p.tools)])).sort(),
     [problems],
@@ -130,10 +154,11 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
     [problems],
   );
 
+  const activeFilterCount = [difficulty !== "all", !!tool, !!topic].filter(Boolean).length;
+
   const filtered = problems.filter((p) => {
     const matchesQuery = p.title.toLowerCase().includes(query.toLowerCase());
     const matchesDifficulty = difficulty === "all" || p.difficulty === difficulty;
-    const matchesCategory = category === "all" || p.category === category;
     const matchesTool = !tool || p.tools.includes(tool);
     const matchesTopic = !topic || p.topics.includes(topic);
     const matchesList =
@@ -141,15 +166,21 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
       (listFilter === "starred" && starred.has(p.slug)) ||
       (listFilter === "submitted" && attempted.has(p.slug)) ||
       (listFilter === "unfinished" && attempted.has(p.slug) && !solved.has(p.slug));
-    return (
-      matchesQuery &&
-      matchesDifficulty &&
-      matchesCategory &&
-      matchesTool &&
-      matchesTopic &&
-      matchesList
-    );
+    return matchesQuery && matchesDifficulty && matchesTool && matchesTopic && matchesList;
   });
+
+  const sorted = useMemo(() => {
+    if (!sort) return filtered;
+    const arr = [...filtered];
+    if (sort.key === "title") {
+      arr.sort((a, b) => a.title.localeCompare(b.title));
+    } else if (sort.key === "difficulty") {
+      arr.sort((a, b) => (DIFFICULTY_RANK[a.difficulty] ?? 0) - (DIFFICULTY_RANK[b.difficulty] ?? 0));
+    }
+    // key === "index": `arr` is already in natural order; only reverse applies.
+    if (sort.dir === "desc") arr.reverse();
+    return arr;
+  }, [filtered, sort]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -181,13 +212,21 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
           />
         </div>
 
-        <Popover>
+        <Popover open={filterOpen} onOpenChange={setFilterOpen}>
           <PopoverTrigger
             render={
-              <Button variant="outline" size="icon" className="size-8" aria-label="Filter" />
+              <Button
+                variant="outline"
+                size="icon"
+                className="relative size-8"
+                aria-label="Filter"
+              />
             }
           >
             <SlidersHorizontal className="size-4" />
+            {activeFilterCount > 0 && (
+              <span className="absolute top-1 right-1 size-1.5 rounded-full bg-primary" />
+            )}
           </PopoverTrigger>
           <PopoverContent align="end" className="w-56">
             <div className="flex flex-col gap-2">
@@ -204,19 +243,44 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
                   ))}
                 </SelectContent>
               </Select>
-              <Select value={category} onValueChange={(v) => setCategory(v ?? "all")}>
+              <Select value={tool ?? "all"} onValueChange={(v) => setTool(v === "all" ? null : v)}>
                 <SelectTrigger size="sm" className="w-full">
-                  <SelectValue placeholder="Category" />
+                  <SelectValue placeholder="Tool" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All categories</SelectItem>
-                  {categories.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
+                  <SelectItem value="all">All tools</SelectItem>
+                  {tools.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {t}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              <Select
+                value={topic ?? "all"}
+                onValueChange={(v) => setTopic(v === "all" ? null : v)}
+              >
+                <SelectTrigger size="sm" className="w-full">
+                  <SelectValue placeholder="Topic" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All topics</SelectItem>
+                  {topics.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {t}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <div className="mt-1 flex items-center justify-between gap-2">
+                <Button variant="ghost" size="sm" onClick={handleClearFilters}>
+                  Clear
+                </Button>
+                <Button size="sm" onClick={() => setFilterOpen(false)}>
+                  Apply
+                </Button>
+              </div>
             </div>
           </PopoverContent>
         </Popover>
@@ -238,14 +302,48 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
             <TableRow className="hover:bg-transparent">
               <TableHead className="w-10 text-center">Status</TableHead>
               <TableHead className="w-10 text-center">Star</TableHead>
-              <TableHead className="w-12">#</TableHead>
-              <TableHead>Problem</TableHead>
-              <TableHead>Difficulty</TableHead>
+              <TableHead className="w-12">
+                <button
+                  type="button"
+                  onClick={() => toggleSort("index")}
+                  className={cn(
+                    "flex items-center gap-1 hover:text-foreground",
+                    sort?.key === "index" && "text-foreground",
+                  )}
+                >
+                  # <SortIcon active={sort?.key === "index"} dir={sort?.dir ?? "asc"} />
+                </button>
+              </TableHead>
+              <TableHead>
+                <button
+                  type="button"
+                  onClick={() => toggleSort("title")}
+                  className={cn(
+                    "flex items-center gap-1 hover:text-foreground",
+                    sort?.key === "title" && "text-foreground",
+                  )}
+                >
+                  Problem <SortIcon active={sort?.key === "title"} dir={sort?.dir ?? "asc"} />
+                </button>
+              </TableHead>
+              <TableHead>
+                <button
+                  type="button"
+                  onClick={() => toggleSort("difficulty")}
+                  className={cn(
+                    "flex items-center gap-1 hover:text-foreground",
+                    sort?.key === "difficulty" && "text-foreground",
+                  )}
+                >
+                  Difficulty{" "}
+                  <SortIcon active={sort?.key === "difficulty"} dir={sort?.dir ?? "asc"} />
+                </button>
+              </TableHead>
               <TableHead className="w-16 text-center">Discuss</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.map((p, i) => (
+            {sorted.map((p, i) => (
               <TableRow key={p.slug}>
                 <TableCell className="text-center">
                   {solved.has(p.slug) ? (
@@ -290,7 +388,7 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
                 </TableCell>
               </TableRow>
             ))}
-            {filtered.length === 0 && (
+            {sorted.length === 0 && (
               <TableRow className="hover:bg-transparent">
                 <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
                   No problems match your filters.

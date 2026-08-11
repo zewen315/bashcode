@@ -50,7 +50,6 @@ def list_problems():
             "slug": config["slug"],
             "title": config["title"],
             "difficulty": config["difficulty"],
-            "category": config["category"],
             "tools": config.get("tools", []),
             "topics": config.get("topics", []),
         })
