@@ -22,7 +22,10 @@ export function NavBar() {
         <Link href="/problems" className="flex items-center gap-2">
           <Logo className="size-7" />
           <span className="hidden text-sm font-semibold tracking-tight sm:inline">
-            Bash<span className="text-primary">Code</span>
+            {/* Fixed to the logo's own green, not the (reverted) --primary
+                token — this is the one piece of the color experiment that
+                was a hit, kept intentionally decoupled from theme tokens. */}
+            Bash<span className="text-[#4ade80]">Code</span>
           </span>
         </Link>
         <nav className="flex items-center gap-3 text-sm text-muted-foreground sm:gap-4">
