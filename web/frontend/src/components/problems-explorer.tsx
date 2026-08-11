@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Search } from "lucide-react";
+import { Search, CheckCircle2, Circle, Star, MessageSquare } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/table";
 import { type ProblemSummary } from "@/lib/api";
 import { difficultyColor } from "@/lib/difficulty";
+import { getSolvedSlugs, getStarredSlugs, toggleStarred } from "@/lib/local-progress";
 
 const DIFFICULTIES = ["easy", "medium", "hard"];
 
@@ -28,6 +29,19 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
   const [query, setQuery] = useState("");
   const [difficulty, setDifficulty] = useState("all");
   const [category, setCategory] = useState("all");
+  const [solved, setSolved] = useState<Set<string>>(new Set());
+  const [starred, setStarred] = useState<Set<string>>(new Set());
+
+  // Solved/starred state lives in localStorage, so it can only be read
+  // after mount — reading it during SSR would always show empty.
+  useEffect(() => {
+    setSolved(getSolvedSlugs());
+    setStarred(getStarredSlugs());
+  }, []);
+
+  function handleToggleStar(slug: string) {
+    setStarred(new Set(toggleStarred(slug)));
+  }
 
   const categories = useMemo(
     () => Array.from(new Set(problems.map((p) => p.category))).sort(),
@@ -85,30 +99,63 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
+              <TableHead className="w-10 text-center">Status</TableHead>
+              <TableHead className="w-10 text-center">Star</TableHead>
               <TableHead className="w-12">#</TableHead>
-              <TableHead>Title</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead className="text-right">Difficulty</TableHead>
+              <TableHead>Problem</TableHead>
+              <TableHead>Difficulty</TableHead>
+              <TableHead className="w-16 text-center">Discuss</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.map((p, i) => (
-              <TableRow key={p.slug} className="cursor-pointer">
+              <TableRow key={p.slug}>
+                <TableCell className="text-center">
+                  {solved.has(p.slug) ? (
+                    <CheckCircle2 className="mx-auto size-4 text-emerald-500" />
+                  ) : (
+                    <Circle className="mx-auto size-4 text-muted-foreground/40" />
+                  )}
+                </TableCell>
+                <TableCell className="text-center">
+                  <button
+                    type="button"
+                    onClick={() => handleToggleStar(p.slug)}
+                    aria-label={starred.has(p.slug) ? "Unstar problem" : "Star problem"}
+                    className="text-muted-foreground/40 hover:text-amber-500"
+                  >
+                    <Star
+                      className={
+                        starred.has(p.slug)
+                          ? "mx-auto size-4 fill-amber-400 text-amber-400"
+                          : "mx-auto size-4"
+                      }
+                    />
+                  </button>
+                </TableCell>
                 <TableCell className="text-muted-foreground">{i + 1}</TableCell>
                 <TableCell className="font-medium">
                   <Link href={`/problems/${p.slug}`} className="hover:text-primary">
                     {p.title}
                   </Link>
                 </TableCell>
-                <TableCell className="text-muted-foreground">{p.category}</TableCell>
-                <TableCell className={`text-right capitalize ${difficultyColor(p.difficulty)}`}>
+                <TableCell className={`capitalize ${difficultyColor(p.difficulty)}`}>
                   {p.difficulty}
+                </TableCell>
+                <TableCell className="text-center">
+                  <Link
+                    href="/discussions"
+                    aria-label="Discuss this problem"
+                    className="inline-flex text-muted-foreground/60 hover:text-foreground"
+                  >
+                    <MessageSquare className="size-4" />
+                  </Link>
                 </TableCell>
               </TableRow>
             ))}
             {filtered.length === 0 && (
               <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={4} className="py-8 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
                   No problems match your filters.
                 </TableCell>
               </TableRow>

@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { submitSolution, type SubmitResult } from "@/lib/api";
+import { markSolved } from "@/lib/local-progress";
 
 const VERDICT_VARIANT: Record<SubmitResult["verdict"], "secondary" | "destructive"> = {
   Accepted: "secondary",
@@ -39,7 +40,9 @@ export function ProblemWorkspace({
     setSubmitting(true);
     setError(null);
     try {
-      setResult(await submitSolution(slug, code));
+      const res = await submitSolution(slug, code);
+      setResult(res);
+      if (res.verdict === "Accepted") markSolved(slug);
     } catch {
       setError("Submission failed — is the backend running?");
     } finally {
