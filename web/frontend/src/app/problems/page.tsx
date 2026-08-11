@@ -12,7 +12,7 @@ export default async function ProblemsPage() {
 
   return (
     <>
-      <main className="grid grid-cols-1 gap-4 bg-muted/30 p-4 lg:h-[calc(100vh-3rem)] lg:grid-cols-[260px_1fr_320px] lg:overflow-hidden">
+      <main className="grid grid-cols-1 gap-4 bg-muted/30 p-4 lg:h-[calc(100vh-5rem)] lg:grid-cols-[260px_1fr_320px] lg:overflow-hidden">
         <aside className="flex flex-col gap-4 lg:overflow-y-auto">
           <Widget>
             <ProblemsSidebar />
