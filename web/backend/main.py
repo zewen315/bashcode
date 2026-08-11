@@ -51,6 +51,7 @@ def list_problems():
             "title": config["title"],
             "difficulty": config["difficulty"],
             "category": config["category"],
+            "tags": config.get("tags", []),
         })
     return problems
 

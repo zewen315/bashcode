@@ -5,10 +5,10 @@ export type ProblemSummary = {
   title: string;
   difficulty: string;
   category: string;
+  tags: string[];
 };
 
 export type ProblemDetail = ProblemSummary & {
-  tags: string[];
   time_limit_seconds: number;
   memory_limit_mb: number;
   description: string;
