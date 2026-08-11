@@ -18,7 +18,7 @@ export default async function ProblemPage({
   if (!problem) notFound();
 
   return (
-    <main className="h-[calc(100vh-5rem)] overflow-hidden">
+    <main className="h-[calc(100vh-3rem)] overflow-hidden">
       <ResizablePanelGroup orientation="horizontal">
         <ResizablePanel defaultSize={42} minSize={25} className="flex flex-col">
           <Tabs defaultValue="description" className="flex h-full flex-col gap-0">
