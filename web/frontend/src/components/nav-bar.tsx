@@ -17,7 +17,7 @@ export function NavBar() {
     <header className="flex h-12 shrink-0 items-center justify-between border-b bg-card px-4">
       <div className="flex items-center gap-6">
         <Link href="/problems" className="flex items-center gap-2">
-          <Logo className="h-7 w-auto" />
+          <Logo className="size-7" />
           <span className="text-sm font-semibold tracking-tight">
             Bash<span className="text-primary">Code</span>
           </span>

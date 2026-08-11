@@ -6,15 +6,15 @@ const TERMINAL_GREEN = "#4ade80";
 
 export function Logo({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 46 32" className={className} xmlns="http://www.w3.org/2000/svg">
-      <rect width="46" height="32" rx="8" fill={TERMINAL_BG} />
+    <svg viewBox="0 0 32 32" className={className} xmlns="http://www.w3.org/2000/svg">
+      <rect width="32" height="32" rx="8" fill={TERMINAL_BG} />
       <text
-        x="23"
-        y="22"
+        x="16"
+        y="21"
         textAnchor="middle"
         className="font-mono"
         fill={TERMINAL_GREEN}
-        fontSize="15"
+        fontSize="13"
         fontWeight="700"
       >
         $B_
