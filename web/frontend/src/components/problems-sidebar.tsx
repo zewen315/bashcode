@@ -6,18 +6,16 @@ import {
   BookOpenText,
   Bot,
   Wrench,
-  Cpu,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const ITEMS = [
   { label: "All Problems", href: "/problems", icon: ListChecks, active: true },
   { label: "Daily Question", icon: CalendarDays, active: false },
-  { label: "Study Plan", icon: GraduationCap, active: false },
+  { label: "Linux Q&A", icon: GraduationCap, active: false },
   { label: "Cheatsheet", icon: BookOpenText, active: false },
   { label: "AI Coding", icon: Bot, active: false },
   { label: "Troubleshooting", icon: Wrench, active: false },
-  { label: "Linux Fundamentals", icon: Cpu, active: false },
 ];
 
 function Row({
