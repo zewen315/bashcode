@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { CircleUserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -49,7 +50,7 @@ export function ProfileMenu() {
             <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
               Signed in as {user.display_name ?? "you"}
             </DropdownMenuLabel>
-            <DropdownMenuItem disabled>Settings</DropdownMenuItem>
+            <DropdownMenuLinkItem render={<Link href="/settings" />}>Settings</DropdownMenuLinkItem>
             <DropdownMenuItem onClick={handleSignOut}>Sign out</DropdownMenuItem>
           </DropdownMenuGroup>
         ) : (

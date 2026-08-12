@@ -15,6 +15,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, StringConstraints
 
+import account
 import auth
 import db
 from ratelimit import check_rate_limit
@@ -53,6 +54,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(auth.router)
+app.include_router(account.router)
 
 
 @app.on_event("startup")

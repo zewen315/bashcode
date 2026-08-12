@@ -153,9 +153,15 @@ def _get_or_create_user(
             # No auto-linking by email across providers, by design — a
             # matching email on another provider still gets a distinct
             # account. See docs/decisions/0002-oauth-login-sessions.md.
+            # provider_avatar_url is set once here and never touched
+            # again — the immutable original, used to restore the
+            # avatar toggle in account.py after it's been turned off.
             cur.execute(
-                "INSERT INTO users (email, display_name, avatar_url) VALUES (%s, %s, %s) RETURNING id",
-                (email, display_name, avatar_url),
+                """
+                INSERT INTO users (email, display_name, avatar_url, provider_avatar_url)
+                VALUES (%s, %s, %s, %s) RETURNING id
+                """,
+                (email, display_name, avatar_url, avatar_url),
             )
             user_id = cur.fetchone()[0]
             cur.execute(
@@ -265,6 +271,27 @@ def me(request: Request):
         return {"user": None}
     user_id, display_name, avatar_url, email = row
     return {"user": {"id": user_id, "display_name": display_name, "avatar_url": avatar_url, "email": email}}
+
+
+def require_user_id(request: Request) -> int:
+    """For endpoints that mutate account state — unlike /me (which
+    degrades to {"user": null} for the anonymous case), these should
+    reject outright.
+    """
+    token = request.cookies.get(SESSION_COOKIE_NAME)
+    user_id = None
+    if token:
+        with db.pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT user_id FROM sessions WHERE token = %s AND expires_at > now()",
+                    (token,),
+                )
+                row = cur.fetchone()
+                user_id = row[0] if row else None
+    if user_id is None:
+        raise HTTPException(status_code=401, detail="not signed in")
+    return user_id
 
 
 @router.post("/logout")
