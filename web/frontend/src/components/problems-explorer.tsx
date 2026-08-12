@@ -197,12 +197,13 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
   const sorted = useMemo(() => {
     if (!sort) return filtered;
     const arr = [...filtered];
-    if (sort.key === "title") {
+    if (sort.key === "index") {
+      arr.sort((a, b) => a.id - b.id);
+    } else if (sort.key === "title") {
       arr.sort((a, b) => a.title.localeCompare(b.title));
     } else if (sort.key === "difficulty") {
       arr.sort((a, b) => (DIFFICULTY_RANK[a.difficulty] ?? 0) - (DIFFICULTY_RANK[b.difficulty] ?? 0));
     }
-    // key === "index": `arr` is already in natural order; only reverse applies.
     if (sort.dir === "desc") arr.reverse();
     return arr;
   }, [filtered, sort]);
@@ -382,7 +383,7 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sorted.map((p, i) => (
+            {sorted.map((p) => (
               <TableRow key={p.slug}>
                 <TableCell className="text-center">
                   {solved.has(p.slug) ? (
@@ -407,7 +408,7 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
                     />
                   </button>
                 </TableCell>
-                <TableCell className="text-muted-foreground">{i + 1}</TableCell>
+                <TableCell className="text-muted-foreground">{p.id}</TableCell>
                 <TableCell className="font-medium">
                   <Link href={`/problems/${p.slug}`} className="hover:text-primary">
                     {p.title}

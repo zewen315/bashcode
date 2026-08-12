@@ -1,6 +1,7 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8123";
 
 export type ProblemSummary = {
+  id: number;
   slug: string;
   title: string;
   difficulty: string;

@@ -7,7 +7,9 @@ export function ProblemDescription({ problem }: { problem: ProblemDetail }) {
   return (
     <div className="px-5 py-4">
       <div className="mb-3 flex items-center gap-2">
-        <h1 className="text-lg font-semibold">{problem.title}</h1>
+        <h1 className="text-lg font-semibold">
+          {problem.id}. {problem.title}
+        </h1>
         <Badge variant="outline" className={difficultyColor(problem.difficulty)}>
           {problem.difficulty}
         </Badge>

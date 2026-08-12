@@ -157,15 +157,17 @@ def _write_scratch_request(code: str, inputs: dict[str, str] | None = None) -> p
 @app.get("/problems")
 def list_problems():
     problems = []
-    for config_path in sorted(PROBLEMS_DIR.glob("*/config.yaml")):
+    for config_path in PROBLEMS_DIR.glob("*/config.yaml"):
         config = yaml.safe_load(config_path.read_text())
         problems.append({
+            "id": config["id"],
             "slug": config["slug"],
             "title": config["title"],
             "difficulty": config["difficulty"],
             "tools": config.get("tools", []),
             "topics": config.get("topics", []),
         })
+    problems.sort(key=lambda p: p["id"])
     return problems
 
 
