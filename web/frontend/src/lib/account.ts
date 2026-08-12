@@ -23,3 +23,16 @@ export async function deleteAccount(): Promise<void> {
   const res = await fetch("/api/account", { method: "DELETE" });
   if (!res.ok) throw new Error(`delete failed (${res.status})`);
 }
+
+export async function uploadAvatar(file: File): Promise<AuthUser> {
+  const formData = new FormData();
+  formData.append("file", file);
+  // No Content-Type header — the browser sets the multipart boundary.
+  const res = await fetch("/api/account/avatar", { method: "POST", body: formData });
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.detail ?? `upload failed (${res.status})`);
+  }
+  const data = (await res.json()) as { user: AuthUser };
+  return data.user;
+}

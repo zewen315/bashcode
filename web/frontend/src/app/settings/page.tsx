@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -16,10 +16,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Footer } from "@/components/footer";
 import { getCurrentUser, initials, type AuthUser } from "@/lib/auth";
-import { updateProfile, deleteAccount } from "@/lib/account";
+import { updateProfile, deleteAccount, uploadAvatar } from "@/lib/account";
+
+const MAX_AVATAR_BYTES = 8 * 1024 * 1024;
+const ACCEPTED_AVATAR_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
 export default function SettingsPage() {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [displayName, setDisplayName] = useState("");
@@ -57,12 +61,56 @@ export default function SettingsPage() {
     }
   }
 
-  async function handleToggleAvatar() {
+  function handlePickFile() {
+    fileInputRef.current?.click();
+  }
+
+  async function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow picking the same file again later
+    if (!file) return;
+
+    if (!ACCEPTED_AVATAR_TYPES.includes(file.type)) {
+      setError("That doesn't look like an image (JPEG, PNG, WebP, or GIF).");
+      return;
+    }
+    if (file.size > MAX_AVATAR_BYTES) {
+      setError("Image is too large (max 8MB).");
+      return;
+    }
+
+    setAvatarBusy(true);
+    setError(null);
+    try {
+      const updated = await uploadAvatar(file);
+      setUser(updated);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't upload — try again.");
+    } finally {
+      setAvatarBusy(false);
+    }
+  }
+
+  async function handleUseProviderAvatar() {
     if (!user) return;
     setAvatarBusy(true);
     setError(null);
     try {
-      const updated = await updateProfile({ use_provider_avatar: !user.avatar_url });
+      const updated = await updateProfile({ use_provider_avatar: true });
+      setUser(updated);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't update avatar — try again.");
+    } finally {
+      setAvatarBusy(false);
+    }
+  }
+
+  async function handleRemoveAvatar() {
+    if (!user) return;
+    setAvatarBusy(true);
+    setError(null);
+    try {
+      const updated = await updateProfile({ use_provider_avatar: false });
       setUser(updated);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't update avatar — try again.");
@@ -99,9 +147,28 @@ export default function SettingsPage() {
                 {initials(user.display_name)}
               </AvatarFallback>
             </Avatar>
-            <Button variant="outline" size="sm" onClick={handleToggleAvatar} disabled={avatarBusy}>
-              {user.avatar_url ? "Use initials instead" : "Use my profile photo"}
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={ACCEPTED_AVATAR_TYPES.join(",")}
+                onChange={handleFileSelected}
+                className="hidden"
+              />
+              <Button variant="outline" size="sm" onClick={handlePickFile} disabled={avatarBusy}>
+                {avatarBusy ? "Working…" : "Upload photo"}
+              </Button>
+              {user.provider_avatar_url && user.avatar_url !== user.provider_avatar_url && (
+                <Button variant="outline" size="sm" onClick={handleUseProviderAvatar} disabled={avatarBusy}>
+                  Use my profile photo
+                </Button>
+              )}
+              {user.avatar_url && (
+                <Button variant="outline" size="sm" onClick={handleRemoveAvatar} disabled={avatarBusy}>
+                  Remove photo
+                </Button>
+              )}
+            </div>
           </div>
 
           <form onSubmit={handleSaveName} className="flex flex-col gap-1.5">

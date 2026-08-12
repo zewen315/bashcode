@@ -258,7 +258,7 @@ def me(request: Request):
         with conn.cursor() as cur:
             cur.execute(
                 """
-                SELECT users.id, users.display_name, users.avatar_url, users.email
+                SELECT users.id, users.display_name, users.avatar_url, users.provider_avatar_url, users.email
                 FROM sessions
                 JOIN users ON users.id = sessions.user_id
                 WHERE sessions.token = %s AND sessions.expires_at > now()
@@ -269,8 +269,16 @@ def me(request: Request):
 
     if not row:
         return {"user": None}
-    user_id, display_name, avatar_url, email = row
-    return {"user": {"id": user_id, "display_name": display_name, "avatar_url": avatar_url, "email": email}}
+    user_id, display_name, avatar_url, provider_avatar_url, email = row
+    return {
+        "user": {
+            "id": user_id,
+            "display_name": display_name,
+            "avatar_url": avatar_url,
+            "provider_avatar_url": provider_avatar_url,
+            "email": email,
+        }
+    }
 
 
 def require_user_id(request: Request) -> int:

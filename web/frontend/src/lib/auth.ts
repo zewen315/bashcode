@@ -10,6 +10,7 @@ export type AuthUser = {
   id: number;
   display_name: string | null;
   avatar_url: string | null;
+  provider_avatar_url: string | null;
   email: string | null;
 };
 

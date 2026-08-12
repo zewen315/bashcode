@@ -2,3 +2,5 @@ fastapi
 uvicorn[standard]
 pyyaml
 psycopg[binary,pool]
+Pillow
+python-multipart

@@ -128,7 +128,8 @@ run's own session mid-script).
 
 ## Explicitly out of scope
 - A unique username/handle.
-- Real avatar upload/custom image URLs.
+- Real avatar upload/custom image URLs — since built, see
+  [0004](./0004-avatar-upload.md).
 - Soft delete / account recovery window.
 - Forced onboarding/name-entry step at first signup.
 - Any other settings beyond name, avatar, delete — nothing specific

@@ -62,6 +62,7 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL}
+      AVATAR_UPLOAD_DIR: /app/uploads/avatars
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       # Source and target are the SAME absolute host path on purpose:
@@ -72,6 +73,10 @@ services:
       # every judge run, since the host daemon can't find "/problems".
       - ${BASHCODE_PROBLEMS_PATH}:${BASHCODE_PROBLEMS_PATH}:ro
       - ${BASHCODE_SCRATCH_PATH}:${BASHCODE_SCRATCH_PATH}
+      # A normal named volume, unlike the two above — no Docker-outside-
+      # of-Docker path-matching constraint here, since nothing ever
+      # shells out to the host daemon for this path.
+      - avatar_uploads:/app/uploads
     expose:
       - "8000"
     depends_on:
@@ -112,3 +117,4 @@ volumes:
   caddy_data:
   caddy_config:
   postgres_data:
+  avatar_uploads:
