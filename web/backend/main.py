@@ -181,6 +181,12 @@ def _send_feedback_email(message: str, reply_to: str | None) -> None:
         headers={
             "Authorization": f"Bearer {RESEND_API_KEY}",
             "Content-Type": "application/json",
+            # Resend's API is fronted by Cloudflare, which blocks the
+            # default urllib User-Agent ("Python-urllib/3.x") as a bot
+            # signature — confirmed by testing directly against the API,
+            # which returned Cloudflare error 1010 ("banned based on
+            # your browser's signature"), not a real Resend rejection.
+            "User-Agent": "BashCode-Backend/1.0",
         },
         method="POST",
     )
@@ -189,9 +195,14 @@ def _send_feedback_email(message: str, reply_to: str | None) -> None:
             resp.read()
     except urllib.error.HTTPError as e:
         detail = e.read().decode(errors="replace")
-        raise HTTPException(status_code=502, detail=f"Resend rejected the request: {detail}") from e
+        # 500, not 502 — Caddy's reverse_proxy doesn't cleanly forward a
+        # backend-originated 502's body (observed directly: the client
+        # got Caddy's own generic "error code: 502" text instead of this
+        # JSON), likely because 502 has gateway-specific meaning to a
+        # proxy. 500 has no such special handling.
+        raise HTTPException(status_code=500, detail=f"Resend rejected the request: {detail}") from e
     except urllib.error.URLError as e:
-        raise HTTPException(status_code=502, detail=f"Could not reach Resend: {e.reason}") from e
+        raise HTTPException(status_code=500, detail=f"Could not reach Resend: {e.reason}") from e
 
 
 def _load_config(slug: str) -> dict:
