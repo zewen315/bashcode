@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,7 +9,9 @@ import { ProblemWorkspace } from "@/components/problem-workspace";
 import { ProblemDescription } from "@/components/problem-description";
 import { ProblemSubmissions } from "@/components/problem-submissions";
 import { useMediaQuery } from "@/hooks/use-media-query";
-import { type ProblemDetail } from "@/lib/api";
+import { type ProblemDetail, type SubmitResult } from "@/lib/api";
+
+type LeftTab = "description" | "submissions" | "solution" | "discussion";
 
 function SolutionPlaceholder() {
   return (
@@ -54,12 +57,27 @@ function ProblemTabsList() {
 export function ProblemPageLayout({ problem }: { problem: ProblemDetail }) {
   const isDesktop = useMediaQuery("(min-width: 1024px)");
 
+  // Owned here, not inside ProblemWorkspace, so that clicking Submit
+  // (which happens in the right-hand workspace) can switch the LEFT
+  // panel to its Submissions tab and hand it the result to display.
+  const [leftTab, setLeftTab] = useState<LeftTab>("description");
+  const [submitResult, setSubmitResult] = useState<SubmitResult | null>(null);
+
+  function handleSubmitResult(res: SubmitResult) {
+    setSubmitResult(res);
+    setLeftTab("submissions");
+  }
+
   if (isDesktop) {
     return (
       <main className="h-[calc(100vh-5rem)] overflow-hidden">
         <ResizablePanelGroup orientation="horizontal">
           <ResizablePanel defaultSize={42} minSize={25} className="flex flex-col">
-            <Tabs defaultValue="description" className="flex h-full flex-col gap-0">
+            <Tabs
+              value={leftTab}
+              onValueChange={(v) => setLeftTab(v as LeftTab)}
+              className="flex h-full flex-col gap-0"
+            >
               <ProblemTabsList />
               <TabsContent value="description" className="min-h-0 flex-1">
                 <ScrollArea className="h-full">
@@ -68,7 +86,7 @@ export function ProblemPageLayout({ problem }: { problem: ProblemDetail }) {
               </TabsContent>
               <TabsContent value="submissions" className="min-h-0 flex-1">
                 <ScrollArea className="h-full">
-                  <ProblemSubmissions slug={problem.slug} />
+                  <ProblemSubmissions slug={problem.slug} liveResult={submitResult} />
                 </ScrollArea>
               </TabsContent>
               <TabsContent value="solution" className="min-h-0 flex-1">
@@ -85,7 +103,12 @@ export function ProblemPageLayout({ problem }: { problem: ProblemDetail }) {
           </ResizablePanel>
           <ResizableHandle withHandle />
           <ResizablePanel defaultSize={58} minSize={30}>
-            <ProblemWorkspace slug={problem.slug} starterCode={problem.starter_code} samples={problem.samples} />
+            <ProblemWorkspace
+              slug={problem.slug}
+              starterCode={problem.starter_code}
+              samples={problem.samples}
+              onSubmitResult={handleSubmitResult}
+            />
           </ResizablePanel>
         </ResizablePanelGroup>
       </main>
@@ -94,13 +117,17 @@ export function ProblemPageLayout({ problem }: { problem: ProblemDetail }) {
 
   return (
     <main className="flex flex-col">
-      <Tabs defaultValue="description" className="flex flex-col gap-0">
+      <Tabs
+        value={leftTab}
+        onValueChange={(v) => setLeftTab(v as LeftTab)}
+        className="flex flex-col gap-0"
+      >
         <ProblemTabsList />
         <TabsContent value="description">
           <ProblemDescription problem={problem} />
         </TabsContent>
         <TabsContent value="submissions">
-          <ProblemSubmissions slug={problem.slug} />
+          <ProblemSubmissions slug={problem.slug} liveResult={submitResult} />
         </TabsContent>
         <TabsContent value="solution">
           <SolutionPlaceholder />
@@ -110,7 +137,12 @@ export function ProblemPageLayout({ problem }: { problem: ProblemDetail }) {
         </TabsContent>
       </Tabs>
       <div className="h-[70vh] border-t">
-        <ProblemWorkspace slug={problem.slug} starterCode={problem.starter_code} samples={problem.samples} />
+        <ProblemWorkspace
+          slug={problem.slug}
+          starterCode={problem.starter_code}
+          samples={problem.samples}
+          onSubmitResult={handleSubmitResult}
+        />
       </div>
     </main>
   );
