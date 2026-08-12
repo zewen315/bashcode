@@ -1,10 +1,14 @@
+import json
 import os
 import pathlib
+import re
 import shutil
 import sys
 import tempfile
 import threading
 import time
+import urllib.error
+import urllib.request
 from collections import defaultdict
 from typing import Annotated
 
@@ -85,6 +89,16 @@ CODE_MAX_LENGTH = 20_000
 INPUT_FILE_MAX_LENGTH = 200_000
 INPUT_FILE_MAX_COUNT = 8
 
+# The /feedback form. Sent via Resend (resend.com) — no SMTP, no new
+# dependency (just stdlib urllib), since it's a single POST call.
+# RESEND_API_KEY unset means feedback is simply unavailable rather than
+# crashing the whole app — this endpoint is the only thing that needs it.
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
+FEEDBACK_TO = "support@bashcode.net"
+FEEDBACK_FROM = "BashCode Feedback <feedback@bashcode.net>"
+FEEDBACK_MESSAGE_MAX_LENGTH = 5_000
+EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
 # Keys double as filesystem path components written on the host (see
 # _write_scratch_request) and as sandbox mount target names — the
 # "<digit-prefix>-<name>" shape both encodes the intended argument order
@@ -107,6 +121,16 @@ class RunRequest(BaseModel):
         dict[SafeFileName, FileContent],
         Field(min_length=1, max_length=INPUT_FILE_MAX_COUNT),
     ]
+
+
+class FeedbackRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=FEEDBACK_MESSAGE_MAX_LENGTH)
+    email: str | None = Field(default=None, max_length=320)
+    # Honeypot: hidden from real users via CSS on the frontend, so only
+    # bots that blindly fill every field ever populate it. Tripping it
+    # silently no-ops (see submit_feedback) rather than erroring, so a
+    # bot never learns to avoid the field.
+    website: str = Field(default="", max_length=200)
 
 
 def _client_ip(request: Request) -> str:
@@ -141,6 +165,33 @@ def _run_judge(fn, *args):
         return fn(*args)
     finally:
         _judge_semaphore.release()
+
+
+def _send_feedback_email(message: str, reply_to: str | None) -> None:
+    if not RESEND_API_KEY:
+        raise HTTPException(status_code=503, detail="Feedback isn't configured yet")
+
+    body = {"from": FEEDBACK_FROM, "to": [FEEDBACK_TO], "subject": "BashCode feedback", "text": message}
+    if reply_to:
+        body["reply_to"] = reply_to
+
+    req = urllib.request.Request(
+        "https://api.resend.com/emails",
+        data=json.dumps(body).encode(),
+        headers={
+            "Authorization": f"Bearer {RESEND_API_KEY}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            resp.read()
+    except urllib.error.HTTPError as e:
+        detail = e.read().decode(errors="replace")
+        raise HTTPException(status_code=502, detail=f"Resend rejected the request: {detail}") from e
+    except urllib.error.URLError as e:
+        raise HTTPException(status_code=502, detail=f"Could not reach Resend: {e.reason}") from e
 
 
 def _load_config(slug: str) -> dict:
@@ -241,3 +292,20 @@ def run(req: RunRequest, request: Request):
         return _run_judge(run_input, scratch_dir / "submission.sh", files)
     finally:
         shutil.rmtree(scratch_dir, ignore_errors=True)
+
+
+@app.post("/feedback")
+def submit_feedback(req: FeedbackRequest, request: Request):
+    _check_rate_limit(request)
+
+    # Honeypot tripped — report success without sending, so a bot never
+    # learns this field is being checked.
+    if req.website:
+        return {"sent": True}
+
+    email = req.email.strip() if req.email else None
+    if email and not EMAIL_PATTERN.match(email):
+        raise HTTPException(status_code=422, detail="That doesn't look like a valid email")
+
+    _send_feedback_email(req.message.strip(), email)
+    return {"sent": True}

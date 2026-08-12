@@ -7,9 +7,6 @@ import { NotificationMenu } from "@/components/notification-menu";
 import { ProfileMenu } from "@/components/profile-menu";
 import { NavLinks } from "@/components/nav-links";
 
-// TODO: swap for a dedicated support alias once one exists.
-const FEEDBACK_MAILTO = "mailto:zewen315@gmail.com?subject=BashCode%20feedback";
-
 export function NavBar() {
   return (
     <header className="flex h-12 shrink-0 items-center justify-between border-b bg-card px-2 sm:px-4">
@@ -30,7 +27,7 @@ export function NavBar() {
         <NotificationMenu />
         <ProfileMenu />
         <Button
-          render={<a href={FEEDBACK_MAILTO} />}
+          render={<Link href="/feedback" />}
           nativeButton={false}
           variant="ghost"
           size="icon"

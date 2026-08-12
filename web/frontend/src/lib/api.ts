@@ -85,3 +85,22 @@ export async function runSolution(
   if (!res.ok) throw new Error(`run failed (${res.status})`);
   return res.json();
 }
+
+// `website` is a honeypot — always sent empty by the real form (the
+// field is visually hidden from real users via CSS). Never surfaced as
+// a real field in the UI.
+export async function sendFeedback(
+  message: string,
+  email: string,
+  website: string,
+): Promise<void> {
+  const res = await fetch(`${API_URL}/feedback`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message, email: email || null, website }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.detail ?? `feedback failed (${res.status})`);
+  }
+}

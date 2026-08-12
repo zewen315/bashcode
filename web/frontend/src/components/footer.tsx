@@ -1,6 +1,5 @@
 import Link from "next/link";
 
-const FEEDBACK_MAILTO = "mailto:zewen315@gmail.com?subject=BashCode%20feedback";
 const SUPPORT_MAILTO = "mailto:support@bashcode.net";
 
 // Not real accounts yet — rendered as plain (non-clickable) text rather
@@ -37,9 +36,9 @@ export function Footer() {
 
         <div className="flex flex-col gap-2">
           <p className="font-semibold">Contact</p>
-          <a href={FEEDBACK_MAILTO} className="text-muted-foreground hover:text-foreground">
+          <Link href="/feedback" className="text-muted-foreground hover:text-foreground">
             Feedback
-          </a>
+          </Link>
           <a href={SUPPORT_MAILTO} className="text-muted-foreground hover:text-foreground">
             support@bashcode.net
           </a>
