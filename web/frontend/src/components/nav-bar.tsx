@@ -1,19 +1,14 @@
 import Link from "next/link";
-import { ListChecks, MessagesSquare, Info, MessageSquarePlus, Coffee } from "lucide-react";
+import { MessageSquarePlus, Coffee } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NotificationMenu } from "@/components/notification-menu";
 import { ProfileMenu } from "@/components/profile-menu";
+import { NavLinks } from "@/components/nav-links";
 
 // TODO: swap for a dedicated support alias once one exists.
 const FEEDBACK_MAILTO = "mailto:zewen315@gmail.com?subject=BashCode%20feedback";
-
-const NAV_LINKS = [
-  { label: "Problems", href: "/problems", icon: ListChecks },
-  { label: "Discussions", href: "/discussions", icon: MessagesSquare },
-  { label: "About", href: "/about", icon: Info },
-];
 
 export function NavBar() {
   return (
@@ -28,19 +23,7 @@ export function NavBar() {
             Bash<span className="text-[#4ade80]">Code</span>
           </span>
         </Link>
-        <nav className="flex items-center gap-3 text-sm text-muted-foreground sm:gap-4">
-          {NAV_LINKS.map(({ label, href, icon: Icon }) => (
-            <Link
-              key={href}
-              href={href}
-              className="flex items-center gap-1.5 hover:text-foreground"
-              aria-label={label}
-            >
-              <Icon className="size-3.5" />
-              <span className="hidden sm:inline">{label}</span>
-            </Link>
-          ))}
-        </nav>
+        <NavLinks />
       </div>
       <div className="flex items-center gap-0.5 sm:gap-1">
         <ThemeToggle />
