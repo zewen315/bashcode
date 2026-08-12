@@ -47,6 +47,7 @@ export function ProblemWorkspace({
   const { resolvedTheme } = useTheme();
   const [code, setCode] = useState(starterCode);
   const [selectedCase, setSelectedCase] = useState(0);
+  const [bottomTab, setBottomTab] = useState<"testcase" | "result">("testcase");
 
   const [running, setRunning] = useState(false);
   const [runError, setRunError] = useState<string | null>(null);
@@ -75,8 +76,10 @@ export function ProblemWorkspace({
         verdict: cases.every((c) => c.passed) ? "Accepted" : "Wrong Answer",
         cases,
       });
+      setBottomTab("result");
     } catch {
       setRunError("Run failed — is the backend running?");
+      setBottomTab("result");
     } finally {
       setRunning(false);
     }
@@ -134,7 +137,11 @@ export function ProblemWorkspace({
       <ResizableHandle withHandle />
 
       <ResizablePanel defaultSize={35} minSize={15}>
-        <Tabs defaultValue="testcase" className="flex h-full flex-col gap-0">
+        <Tabs
+          value={bottomTab}
+          onValueChange={(v) => setBottomTab(v as "testcase" | "result")}
+          className="flex h-full flex-col gap-0"
+        >
           <TabsList className="w-full justify-start rounded-none border-b bg-transparent px-3">
             <TabsTrigger value="testcase">Testcase</TabsTrigger>
             <TabsTrigger value="result">Result</TabsTrigger>
