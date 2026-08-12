@@ -95,7 +95,7 @@ INPUT_FILE_MAX_COUNT = 8
 # crashing the whole app — this endpoint is the only thing that needs it.
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
 FEEDBACK_TO = "support@bashcode.net"
-FEEDBACK_FROM = "BashCode Feedback <feedback@bashcode.net>"
+FEEDBACK_FROM = "BashCode Feedback <support@bashcode.net>"
 FEEDBACK_MESSAGE_MAX_LENGTH = 5_000
 EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
