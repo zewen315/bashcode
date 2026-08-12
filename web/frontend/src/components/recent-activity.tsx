@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle2, XCircle, Clock } from "lucide-react";
+import Link from "next/link";
+import { CheckCircle2, XCircle, Clock, ChevronRight } from "lucide-react";
 import { type ProblemSummary } from "@/lib/api";
 import { getRecentActivity, type ActivityEntry } from "@/lib/local-progress";
 import { relativeTime } from "@/lib/relative-time";
+
+const WIDGET_LIMIT = 3;
 
 const VERDICT_ICON: Record<string, typeof CheckCircle2> = {
   Accepted: CheckCircle2,
@@ -37,7 +40,7 @@ export function RecentActivity({ problems }: { problems: ProblemSummary[] }) {
 
   return (
     <div className="flex flex-col gap-2.5">
-      {activity.map((entry, i) => {
+      {activity.slice(0, WIDGET_LIMIT).map((entry, i) => {
         const Icon = VERDICT_ICON[entry.verdict] ?? Clock;
         return (
           <div key={i} className="flex items-center gap-2 text-sm">
@@ -49,6 +52,14 @@ export function RecentActivity({ problems }: { problems: ProblemSummary[] }) {
           </div>
         );
       })}
+      {activity.length > WIDGET_LIMIT && (
+        <Link
+          href="/activity"
+          className="flex items-center gap-0.5 text-xs text-muted-foreground hover:text-foreground"
+        >
+          More <ChevronRight className="size-3" />
+        </Link>
+      )}
     </div>
   );
 }
