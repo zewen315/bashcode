@@ -55,8 +55,7 @@ export default function FeedbackPage() {
       <main className="mx-auto max-w-2xl px-6 py-16">
         <h1 className="mb-1 text-2xl font-semibold">Feedback</h1>
         <p className="mb-6 text-sm text-muted-foreground">
-          Bug reports, feature requests, or anything else — this goes straight to{" "}
-          support@bashcode.net.
+          Bug reports, feature requests, or anything else — this goes straight to support@bashcode.net.
         </p>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
