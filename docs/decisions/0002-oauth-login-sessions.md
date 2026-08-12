@@ -1,6 +1,7 @@
 # 0002 — GitHub + Google OAuth login with server-side sessions
 
-Status: **In progress.**
+Status: **Implemented, verified locally short of live provider consent.
+Not yet deployed.**
 
 ## Context
 
