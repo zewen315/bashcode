@@ -6,10 +6,8 @@ import shutil
 import sys
 import tempfile
 import threading
-import time
 import urllib.error
 import urllib.request
-from collections import defaultdict
 from typing import Annotated
 
 import yaml
@@ -17,7 +15,9 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, StringConstraints
 
+import auth
 import db
+from ratelimit import check_rate_limit
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "judge"))
 from run_submission import judge, run_input  # noqa: E402
 
@@ -52,6 +52,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.include_router(auth.router)
 
 
 @app.on_event("startup")
@@ -79,11 +80,6 @@ def on_shutdown():
 MAX_CONCURRENT_JUDGE_RUNS = int(os.environ.get("MAX_CONCURRENT_JUDGE_RUNS", "4"))
 JUDGE_QUEUE_WAIT_S = 10
 _judge_semaphore = threading.Semaphore(MAX_CONCURRENT_JUDGE_RUNS)
-
-RATE_LIMIT_MAX_REQUESTS = int(os.environ.get("RATE_LIMIT_MAX_REQUESTS", "10"))
-RATE_LIMIT_WINDOW_S = int(os.environ.get("RATE_LIMIT_WINDOW_S", "60"))
-_rate_limit_lock = threading.Lock()
-_rate_limit_log: dict[str, list[float]] = defaultdict(list)
 
 CODE_MAX_LENGTH = 20_000
 INPUT_FILE_MAX_LENGTH = 200_000
@@ -131,26 +127,6 @@ class FeedbackRequest(BaseModel):
     # silently no-ops (see submit_feedback) rather than erroring, so a
     # bot never learns to avoid the field.
     website: str = Field(default="", max_length=200)
-
-
-def _client_ip(request: Request) -> str:
-    # Caddy sets X-Forwarded-For when reverse-proxying in production;
-    # request.client.host would otherwise just be Caddy's own container.
-    forwarded = request.headers.get("x-forwarded-for")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    return request.client.host if request.client else "unknown"
-
-
-def _check_rate_limit(request: Request):
-    ip = _client_ip(request)
-    now = time.time()
-    with _rate_limit_lock:
-        recent = [t for t in _rate_limit_log[ip] if now - t < RATE_LIMIT_WINDOW_S]
-        if len(recent) >= RATE_LIMIT_MAX_REQUESTS:
-            raise HTTPException(status_code=429, detail="Too many requests — slow down")
-        recent.append(now)
-        _rate_limit_log[ip] = recent
 
 
 def _run_judge(fn, *args):
@@ -280,7 +256,7 @@ def get_problem(slug: str):
 
 @app.post("/submit")
 def submit(req: SubmitRequest, request: Request):
-    _check_rate_limit(request)
+    check_rate_limit(request)
     if not (PROBLEMS_DIR / req.slug / "tests").is_dir():
         raise HTTPException(status_code=404, detail=f"unknown problem: {req.slug}")
 
@@ -293,7 +269,7 @@ def submit(req: SubmitRequest, request: Request):
 
 @app.post("/run")
 def run(req: RunRequest, request: Request):
-    _check_rate_limit(request)
+    check_rate_limit(request)
     if not (PROBLEMS_DIR / req.slug).is_dir():
         raise HTTPException(status_code=404, detail=f"unknown problem: {req.slug}")
 
@@ -307,7 +283,7 @@ def run(req: RunRequest, request: Request):
 
 @app.post("/feedback")
 def submit_feedback(req: FeedbackRequest, request: Request):
-    _check_rate_limit(request)
+    check_rate_limit(request)
 
     # Honeypot tripped — report success without sending, so a bot never
     # learns this field is being checked.

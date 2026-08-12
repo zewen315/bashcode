@@ -3,32 +3,27 @@
 import { useEffect, useState } from "react";
 import { CircleUserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuLinkItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { getDemoUser, setDemoUser, clearDemoUser, initials, type DemoUser } from "@/lib/demo-user";
+import { getCurrentUser, signOut, initials, GITHUB_LOGIN_URL, GOOGLE_LOGIN_URL, type AuthUser } from "@/lib/auth";
 
 export function ProfileMenu() {
-  const [user, setUser] = useState<DemoUser | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
 
   useEffect(() => {
-    setUser(getDemoUser());
+    getCurrentUser().then(setUser);
   }, []);
 
-  function handleDemoSignIn() {
-    const demo = { name: "Guest" };
-    setDemoUser(demo);
-    setUser(demo);
-  }
-
-  function handleSignOut() {
-    clearDemoUser();
+  async function handleSignOut() {
+    await signOut();
     setUser(null);
   }
 
@@ -39,8 +34,9 @@ export function ProfileMenu() {
       >
         {user ? (
           <Avatar size="sm">
+            <AvatarImage src={user.avatar_url ?? undefined} />
             <AvatarFallback className="bg-primary text-primary-foreground">
-              {initials(user.name)}
+              {initials(user.display_name)}
             </AvatarFallback>
           </Avatar>
         ) : (
@@ -51,20 +47,15 @@ export function ProfileMenu() {
         {user ? (
           <DropdownMenuGroup>
             <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-              Signed in as {user.name} (demo preview — not a real account)
+              Signed in as {user.display_name ?? "you"}
             </DropdownMenuLabel>
             <DropdownMenuItem disabled>Settings</DropdownMenuItem>
             <DropdownMenuItem onClick={handleSignOut}>Sign out</DropdownMenuItem>
           </DropdownMenuGroup>
         ) : (
           <DropdownMenuGroup>
-            <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-              Accounts aren&apos;t built yet
-            </DropdownMenuLabel>
-            <DropdownMenuItem onClick={handleDemoSignIn}>
-              Try demo sign-in (preview only)
-            </DropdownMenuItem>
-            <DropdownMenuItem disabled>Settings</DropdownMenuItem>
+            <DropdownMenuLinkItem href={GITHUB_LOGIN_URL}>Sign in with GitHub</DropdownMenuLinkItem>
+            <DropdownMenuLinkItem href={GOOGLE_LOGIN_URL}>Sign in with Google</DropdownMenuLinkItem>
           </DropdownMenuGroup>
         )}
       </DropdownMenuContent>
