@@ -10,6 +10,37 @@ services:
     command: ["true"]
     restart: "no"
 
+  # Self-hosted on the same droplet. max_connections is capped low —
+  # this app's pool never opens more than 5 connections (see
+  # web/backend/db.py) and a small droplet has no room for Postgres's
+  # much larger default. The healthcheck matters: a plain `depends_on`
+  # only waits for the container to start, not for Postgres to be
+  # ready to accept connections (which takes a few seconds on first
+  # boot) — without it, `backend`'s startup migration can race a cold
+  # `docker compose up` and crash-loop until Postgres catches up.
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-bashcode}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bashcode}
+      POSTGRES_DB: ${POSTGRES_DB:-bashcode}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      # Loopback-only: safe to publish even on the public droplet (not
+      # reachable off-box), but still lets a developer `psql` in from
+      # the host for local dev/debugging. backend<->postgres traffic
+      # itself goes over the compose bridge network via the service
+      # name below, never through this published port.
+      - "127.0.0.1:5432:5432"
+    command: postgres -c max_connections=20
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-bashcode} -d $${POSTGRES_DB:-bashcode}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   backend:
     build:
       context: .
@@ -21,6 +52,7 @@ services:
       BASHCODE_PROBLEMS_DIR: ${BASHCODE_PROBLEMS_PATH}
       BASHCODE_SCRATCH_DIR: ${BASHCODE_SCRATCH_PATH}
       CORS_ORIGINS: ${CORS_ORIGINS}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-bashcode}:${POSTGRES_PASSWORD:-bashcode}@postgres:5432/${POSTGRES_DB:-bashcode}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       # Source and target are the SAME absolute host path on purpose:
@@ -34,7 +66,10 @@ services:
     expose:
       - "8000"
     depends_on:
-      - sandbox-image
+      sandbox-image:
+        condition: service_started
+      postgres:
+        condition: service_healthy
 
   frontend:
     build:
@@ -67,3 +102,4 @@ services:
 volumes:
   caddy_data:
   caddy_config:
+  postgres_data:

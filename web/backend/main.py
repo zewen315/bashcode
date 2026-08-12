@@ -13,6 +13,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, StringConstraints
 
+import db
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "judge"))
 from run_submission import judge, run_input  # noqa: E402
 
@@ -47,6 +48,20 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+def on_startup():
+    # Migrations must succeed before the pool opens — never serve a
+    # request against a connection to a database that might not have
+    # the current schema yet.
+    db.run_migrations()
+    db.pool.open()
+
+
+@app.on_event("shutdown")
+def on_shutdown():
+    db.pool.close()
 
 # --- Abuse/exhaustion protections -------------------------------------
 # The sandbox itself (network=none, cap-drop=ALL, pids/mem/cpu limits,

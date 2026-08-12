@@ -1,8 +1,9 @@
 # syntax=docker/dockerfile:1
 #
 # Build context must be the REPO ROOT (bashcode/), not web/backend/ —
-# this needs both web/backend/ and judge/ to preserve the relative
-# layout main.py expects (sys.path.insert(...judge dir...)).
+# this needs web/backend/, judge/, and db/ to preserve the relative
+# layout main.py/db.py expect (sys.path.insert(...judge dir...),
+# db.py's MIGRATIONS_DIR resolving to /app/db/migrations).
 #
 # Runs as root deliberately: it shells out to `docker run` against the
 # HOST's Docker daemon via the mounted socket (see docker-compose.yml)
@@ -22,6 +23,7 @@ RUN pip install --no-cache-dir -r web/backend/requirements.txt
 
 COPY web/backend/ web/backend/
 COPY judge/ judge/
+COPY db/ db/
 
 WORKDIR /app/web/backend
 EXPOSE 8000
