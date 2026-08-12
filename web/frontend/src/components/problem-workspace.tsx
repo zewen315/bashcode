@@ -86,6 +86,7 @@ export function ProblemWorkspace({
   const [code, setCode] = useState(starterCode);
   const [activeTab, setActiveTab] = useState<"testcase" | "result">("result");
   const [lastAction, setLastAction] = useState<"run" | "submit" | null>(null);
+  const [selectedCase, setSelectedCase] = useState(0);
 
   const [running, setRunning] = useState(false);
   const [runError, setRunError] = useState<string | null>(null);
@@ -187,29 +188,38 @@ export function ProblemWorkspace({
 
           <TabsContent value="testcase" className="min-h-0 flex-1">
             <ScrollArea className="h-full">
-              <div className="flex flex-col gap-4 px-4 py-3">
+              <div className="flex flex-col gap-3 px-4 py-3">
                 {samples.length === 0 && (
                   <p className="text-sm text-muted-foreground">
                     No sample tests for this problem yet.
                   </p>
                 )}
-                {samples.map((s, i) => (
-                  <div key={i} className="flex flex-col gap-1.5">
-                    <p className="text-xs font-medium text-muted-foreground">Case {i + 1}</p>
-                    <div>
-                      <p className="mb-1 text-[11px] text-muted-foreground">Input</p>
-                      <pre className="overflow-x-auto rounded border bg-muted p-2 font-mono text-xs whitespace-pre-wrap">
-                        {s.input}
-                      </pre>
+                {samples.length > 0 && (
+                  <>
+                    <div className="flex flex-wrap gap-1.5">
+                      {samples.map((_, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => setSelectedCase(i)}
+                          className={`rounded-full border px-2.5 py-1 text-xs transition-colors ${
+                            selectedCase === i
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                          }`}
+                        >
+                          Case {i + 1}
+                        </button>
+                      ))}
                     </div>
                     <div>
-                      <p className="mb-1 text-[11px] text-muted-foreground">Expected Output</p>
+                      <p className="mb-1 text-xs font-medium text-muted-foreground">Input</p>
                       <pre className="overflow-x-auto rounded border bg-muted p-2 font-mono text-xs whitespace-pre-wrap">
-                        {s.expected}
+                        {samples[selectedCase]?.input}
                       </pre>
                     </div>
-                  </div>
-                ))}
+                  </>
+                )}
               </div>
             </ScrollArea>
           </TabsContent>
