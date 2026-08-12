@@ -98,7 +98,7 @@ const CANONICAL_TOPICS = [
   "user-management",
 ];
 
-type SortKey = "index" | "title" | "difficulty";
+type SortKey = "id" | "title" | "difficulty";
 type Sort = { key: SortKey; dir: "asc" | "desc" } | null;
 
 function SortIcon({ active, dir }: { active: boolean; dir: "asc" | "desc" }) {
@@ -197,7 +197,7 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
   const sorted = useMemo(() => {
     if (!sort) return filtered;
     const arr = [...filtered];
-    if (sort.key === "index") {
+    if (sort.key === "id") {
       arr.sort((a, b) => a.id - b.id);
     } else if (sort.key === "title") {
       arr.sort((a, b) => a.title.localeCompare(b.title));
@@ -345,13 +345,13 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
               <TableHead className="w-12">
                 <button
                   type="button"
-                  onClick={() => toggleSort("index")}
+                  onClick={() => toggleSort("id")}
                   className={cn(
                     "flex items-center gap-1 hover:text-foreground",
-                    sort?.key === "index" && "font-semibold text-foreground",
+                    sort?.key === "id" && "font-semibold text-foreground",
                   )}
                 >
-                  # <SortIcon active={sort?.key === "index"} dir={sort?.dir ?? "asc"} />
+                  ID <SortIcon active={sort?.key === "id"} dir={sort?.dir ?? "asc"} />
                 </button>
               </TableHead>
               <TableHead>
