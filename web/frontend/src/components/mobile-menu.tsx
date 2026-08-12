@@ -62,7 +62,7 @@ export function MobileMenu({
             </Widget>
             <Widget title="Shortcuts">
               <Suspense fallback={null}>
-                <Shortcuts />
+                <Shortcuts totalCount={problems.length} />
               </Suspense>
             </Widget>
             <ProblemsRightRail problems={problems} today={today} />

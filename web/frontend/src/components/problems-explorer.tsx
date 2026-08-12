@@ -15,6 +15,8 @@ import {
   ChevronUp,
   ChevronDown,
   ChevronsUpDown,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -47,6 +49,7 @@ import { ProblemTags } from "@/components/problem-tags";
 import { TagInput } from "@/components/tag-input";
 import { cn } from "@/lib/utils";
 
+const PAGE_SIZE = 20;
 const DIFFICULTIES = ["easy", "medium", "hard"];
 const DIFFICULTY_RANK: Record<string, number> = { easy: 1, medium: 2, hard: 3 };
 
@@ -123,6 +126,7 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
   const [selectedTools, setSelectedTools] = useState<string[]>([]);
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [sort, setSort] = useState<Sort>(null);
+  const [page, setPage] = useState(1);
   const [filterOpen, setFilterOpen] = useState(false);
   const [solved, setSolved] = useState<Set<string>>(new Set());
   const [starred, setStarred] = useState<Set<string>>(new Set());
@@ -234,6 +238,15 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
     if (sort.dir === "desc") arr.reverse();
     return arr;
   }, [filtered, sort]);
+
+  const pageCount = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  // Whenever the filters/sort narrow or reorder the result set, land back
+  // on page 1 rather than leaving the user stranded on a now-out-of-range
+  // page (e.g. page 3 of a filtered set that only has 1 page left).
+  useEffect(() => {
+    setPage(1);
+  }, [query, difficulty, selectedTools, selectedTopics, progressFilter, starredOnly, sort]);
+  const paged = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <div className="flex flex-col gap-4">
@@ -430,7 +443,7 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sorted.map((p) => (
+            {paged.map((p) => (
               <TableRow key={p.slug}>
                 <TableCell className="text-center">
                   {solved.has(p.slug) ? (
@@ -484,6 +497,33 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
             )}
           </TableBody>
         </Table>
+        {pageCount > 1 && (
+          <div className="flex items-center justify-between gap-2 border-t px-4 py-2 text-sm">
+            <span className="text-xs text-muted-foreground">
+              Page {page} of {pageCount}
+            </span>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                <ChevronLeft className="size-4" />
+                Prev
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page >= pageCount}
+                onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+              >
+                Next
+                <ChevronRight className="size-4" />
+              </Button>
+            </div>
+          </div>
+        )}
       </Widget>
     </div>
   );

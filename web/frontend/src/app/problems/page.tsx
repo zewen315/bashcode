@@ -14,24 +14,24 @@ export default async function ProblemsPage() {
 
   return (
     <>
-      <main className="grid grid-cols-1 gap-4 bg-muted/30 p-4 lg:h-[calc(100vh-5rem)] lg:grid-cols-[260px_1fr_320px] lg:overflow-hidden">
-        <aside className="hidden flex-col gap-4 lg:flex lg:overflow-y-auto">
+      <main className="grid grid-cols-1 gap-4 bg-muted/30 p-4 lg:grid-cols-[260px_1fr_320px] lg:items-start">
+        <aside className="hidden flex-col gap-4 lg:flex">
           <Widget>
             <ProblemsSidebar />
           </Widget>
           <Widget title="Shortcuts">
             <Suspense fallback={null}>
-              <Shortcuts />
+              <Shortcuts totalCount={problems.length} />
             </Suspense>
           </Widget>
         </aside>
-        <section className="flex flex-col gap-4 lg:overflow-y-auto">
+        <section className="flex flex-col gap-4">
           <MobileMenu problems={problems} today={today} />
           <Suspense fallback={null}>
             <ProblemsExplorer problems={problems} />
           </Suspense>
         </section>
-        <aside className="hidden lg:block lg:overflow-y-auto">
+        <aside className="hidden lg:block">
           <ProblemsRightRail problems={problems} today={today} />
         </aside>
       </main>

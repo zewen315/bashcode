@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Star, CheckCircle2, CircleDashed } from "lucide-react";
+import { Star, CheckCircle2, CircleDashed, Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getStarredSlugs, getAttemptedSlugs, getSolvedSlugs } from "@/lib/local-progress";
 
-export function Shortcuts() {
+export function Shortcuts({ totalCount }: { totalCount: number }) {
   const searchParams = useSearchParams();
   // Star and progress are independent filters (see problems-explorer.tsx),
   // so they live in separate query params rather than one shared "list".
@@ -16,6 +16,7 @@ export function Shortcuts() {
   const [starredCount, setStarredCount] = useState<number | null>(null);
   const [finishedCount, setFinishedCount] = useState<number | null>(null);
   const [attemptedCount, setAttemptedCount] = useState<number | null>(null);
+  const [notStartedCount, setNotStartedCount] = useState<number | null>(null);
 
   useEffect(() => {
     const attempted = getAttemptedSlugs();
@@ -23,7 +24,8 @@ export function Shortcuts() {
     setStarredCount(getStarredSlugs().size);
     setFinishedCount(solved.size);
     setAttemptedCount([...attempted].filter((slug) => !solved.has(slug)).length);
-  }, []);
+    setNotStartedCount(totalCount - attempted.size);
+  }, [totalCount]);
 
   const items = [
     { href: "/problems?starred=1", label: "Starred", icon: Star, count: starredCount, active: activeStarred },
@@ -40,6 +42,13 @@ export function Shortcuts() {
       icon: CircleDashed,
       count: attemptedCount,
       active: activeProgress === "attempted",
+    },
+    {
+      href: "/problems?progress=not-started",
+      label: "Not started",
+      icon: Circle,
+      count: notStartedCount,
+      active: activeProgress === "not-started",
     },
   ];
 
