@@ -53,6 +53,17 @@ services:
       BASHCODE_SCRATCH_DIR: ${BASHCODE_SCRATCH_PATH}
       CORS_ORIGINS: ${CORS_ORIGINS}
       DATABASE_URL: postgresql://${POSTGRES_USER:-bashcode}:${POSTGRES_PASSWORD:-bashcode}@postgres:5432/${POSTGRES_DB:-bashcode}
+      # A var existing in .env does NOT automatically reach the
+      # container — compose only passes through what's explicitly
+      # listed here. Wiring the OAuth vars through now too, even though
+      # the login code doesn't read them yet, so that task doesn't hit
+      # the exact same "key's in .env but the container never sees it"
+      # gap RESEND_API_KEY just did.
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       # Source and target are the SAME absolute host path on purpose:
