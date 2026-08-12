@@ -135,7 +135,11 @@ def _fetch_profile(provider: str, cfg: dict, access_token: str) -> dict:
 
 def _get_or_create_user(
     provider: str, provider_user_id: str, email: str | None, display_name: str | None, avatar_url: str | None
-) -> int:
+) -> tuple[int, bool]:
+    """Returns (user_id, is_new) — is_new is exactly "this INSERT branch
+    ran", which the callback uses to decide whether to route through
+    the one-time /welcome nudge (see docs/decisions/0005-onboarding-nudge.md).
+    """
     with db.pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -148,7 +152,7 @@ def _get_or_create_user(
                     "UPDATE oauth_identities SET email = %s WHERE provider = %s AND provider_user_id = %s",
                     (email, provider, provider_user_id),
                 )
-                return row[0]
+                return row[0], False
 
             # No auto-linking by email across providers, by design — a
             # matching email on another provider still gets a distinct
@@ -168,7 +172,7 @@ def _get_or_create_user(
                 "INSERT INTO oauth_identities (user_id, provider, provider_user_id, email) VALUES (%s, %s, %s, %s)",
                 (user_id, provider, provider_user_id, email),
             )
-            return user_id
+            return user_id, True
 
 
 @router.get("/{provider}/login")
@@ -222,7 +226,7 @@ def callback(provider: str, request: Request):
     try:
         access_token = _exchange_code(provider, cfg, params["code"])
         profile = _fetch_profile(provider, cfg, access_token)
-        user_id = _get_or_create_user(
+        user_id, is_new = _get_or_create_user(
             provider,
             str(profile["id"]),
             profile.get("email"),
@@ -242,7 +246,10 @@ def callback(provider: str, request: Request):
                 (token, user_id, expires_at),
             )
 
-    resp = RedirectResponse(f"{PUBLIC_BASE_URL}/problems", status_code=302)
+    # New accounts land on the one-time onboarding nudge instead of
+    # straight to /problems — see docs/decisions/0005-onboarding-nudge.md.
+    destination = "welcome" if is_new else "problems"
+    resp = RedirectResponse(f"{PUBLIC_BASE_URL}/{destination}", status_code=302)
     resp.delete_cookie(cookie_name, path="/")
     _set_cookie(resp, SESSION_COOKIE_NAME, token, SESSION_MAX_AGE_S)
     return resp
