@@ -52,6 +52,7 @@ export function ProblemWorkspace({
   const [running, setRunning] = useState(false);
   const [runError, setRunError] = useState<string | null>(null);
   const [sampleRun, setSampleRun] = useState<SampleRunResult | null>(null);
+  const [selectedResultCase, setSelectedResultCase] = useState(0);
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -63,7 +64,8 @@ export function ProblemWorkspace({
     try {
       const cases = await Promise.all(
         samples.map(async (s, i) => {
-          const res = await runSolution(slug, code, s.input);
+          const inputs = Object.fromEntries(s.files.map((f) => [f.name, f.content]));
+          const res = await runSolution(slug, code, inputs);
           return {
             name: `Case ${i + 1}`,
             expected: s.expected,
@@ -76,6 +78,10 @@ export function ProblemWorkspace({
         verdict: cases.every((c) => c.passed) ? "Accepted" : "Wrong Answer",
         cases,
       });
+      // Jump straight to the first failing case, since that's the one
+      // worth looking at — default to the first case if everything passed.
+      const firstFailure = cases.findIndex((c) => !c.passed);
+      setSelectedResultCase(firstFailure === -1 ? 0 : firstFailure);
       setBottomTab("result");
     } catch {
       setRunError("Run failed — is the backend running?");
@@ -105,7 +111,7 @@ export function ProblemWorkspace({
 
   return (
     <ResizablePanelGroup orientation="vertical">
-      <ResizablePanel defaultSize={65} minSize={30} className="flex flex-col">
+      <ResizablePanel defaultSize="65" minSize="30" className="flex flex-col">
         <div className="flex h-10 shrink-0 items-center justify-between border-b bg-card px-3">
           <span className="text-xs text-muted-foreground">bash</span>
           <div className="flex items-center gap-2">
@@ -136,7 +142,7 @@ export function ProblemWorkspace({
 
       <ResizableHandle withHandle />
 
-      <ResizablePanel defaultSize={35} minSize={15}>
+      <ResizablePanel defaultSize="35" minSize="15">
         <Tabs
           value={bottomTab}
           onValueChange={(v) => setBottomTab(v as "testcase" | "result")}
@@ -173,11 +179,17 @@ export function ProblemWorkspace({
                         </button>
                       ))}
                     </div>
-                    <div>
-                      <p className="mb-1 text-xs font-medium text-muted-foreground">Input</p>
-                      <pre className="overflow-x-auto rounded border bg-muted p-2 font-mono text-xs whitespace-pre-wrap">
-                        {samples[selectedCase]?.input}
-                      </pre>
+                    <div className="flex flex-col gap-3">
+                      {samples[selectedCase]?.files.map((f) => (
+                        <div key={f.name}>
+                          <p className="mb-1 text-xs font-medium text-muted-foreground">
+                            {f.name}
+                          </p>
+                          <pre className="overflow-x-auto rounded border bg-muted p-2 font-mono text-xs whitespace-pre-wrap">
+                            {f.content}
+                          </pre>
+                        </div>
+                      ))}
                     </div>
                   </>
                 )}
@@ -212,17 +224,49 @@ export function ProblemWorkspace({
                     <p className="text-xs text-muted-foreground">
                       Sample tests only — Submit to check against the full hidden suite.
                     </p>
-                    <div className="flex flex-col gap-2 text-sm">
-                      {sampleRun.cases.map((c) => (
-                        <div key={c.name} className="rounded border p-2 font-mono text-xs">
-                          <span className={c.passed ? "text-emerald-500" : "text-rose-500"}>
-                            {c.passed ? "PASS" : "FAIL"}
-                          </span>{" "}
-                          {c.name} — expected {JSON.stringify(c.expected)}, got{" "}
-                          {JSON.stringify(c.actual)}
-                        </div>
-                      ))}
+                    <div className="flex flex-wrap gap-3">
+                      {sampleRun.cases.map((c, i) => {
+                        const selected = selectedResultCase === i;
+                        const passedColors = selected
+                          ? "border-emerald-500 bg-emerald-500 text-white"
+                          : "border-emerald-500/50 text-emerald-600 hover:bg-emerald-500/10 dark:text-emerald-400";
+                        const failedColors = selected
+                          ? "border-rose-500 bg-rose-500 text-white"
+                          : "border-rose-500/50 text-rose-600 hover:bg-rose-500/10 dark:text-rose-400";
+                        return (
+                          <button
+                            key={c.name}
+                            type="button"
+                            onClick={() => setSelectedResultCase(i)}
+                            className={`rounded-full border px-4 py-2 text-xs transition-colors ${
+                              c.passed ? passedColors : failedColors
+                            }`}
+                          >
+                            {c.name}
+                          </button>
+                        );
+                      })}
                     </div>
+                    {sampleRun.cases[selectedResultCase] && (
+                      <div className="flex flex-col gap-3">
+                        <div>
+                          <p className="mb-1 text-xs font-medium text-muted-foreground">
+                            Expected
+                          </p>
+                          <pre className="overflow-x-auto rounded border bg-muted p-2 font-mono text-xs whitespace-pre-wrap">
+                            {sampleRun.cases[selectedResultCase].expected}
+                          </pre>
+                        </div>
+                        <div>
+                          <p className="mb-1 text-xs font-medium text-muted-foreground">
+                            Your Output
+                          </p>
+                          <pre className="overflow-x-auto rounded border bg-muted p-2 font-mono text-xs whitespace-pre-wrap">
+                            {sampleRun.cases[selectedResultCase].actual}
+                          </pre>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

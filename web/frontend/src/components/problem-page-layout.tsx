@@ -72,7 +72,7 @@ export function ProblemPageLayout({ problem }: { problem: ProblemDetail }) {
     return (
       <main className="h-[calc(100vh-5rem)] overflow-hidden">
         <ResizablePanelGroup orientation="horizontal">
-          <ResizablePanel defaultSize={42} minSize={25} className="flex flex-col">
+          <ResizablePanel defaultSize="42" minSize="25" className="flex flex-col">
             <Tabs
               value={leftTab}
               onValueChange={(v) => setLeftTab(v as LeftTab)}
@@ -102,7 +102,7 @@ export function ProblemPageLayout({ problem }: { problem: ProblemDetail }) {
             </Tabs>
           </ResizablePanel>
           <ResizableHandle withHandle />
-          <ResizablePanel defaultSize={58} minSize={30}>
+          <ResizablePanel defaultSize="58" minSize="30">
             <ProblemWorkspace
               slug={problem.slug}
               starterCode={problem.starter_code}

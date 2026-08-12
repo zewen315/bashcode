@@ -1,15 +1,17 @@
 import os
 import pathlib
+import shutil
 import sys
 import tempfile
 import threading
 import time
 from collections import defaultdict
+from typing import Annotated
 
 import yaml
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StringConstraints
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "judge"))
 from run_submission import judge, run_input  # noqa: E402
@@ -65,7 +67,17 @@ _rate_limit_lock = threading.Lock()
 _rate_limit_log: dict[str, list[float]] = defaultdict(list)
 
 CODE_MAX_LENGTH = 20_000
-INPUT_MAX_LENGTH = 1_000_000
+INPUT_FILE_MAX_LENGTH = 200_000
+INPUT_FILE_MAX_COUNT = 8
+
+# Keys double as filesystem path components written on the host (see
+# _write_scratch_request) and as sandbox mount target names — the
+# "<digit-prefix>-<name>" shape both encodes the intended argument order
+# and, just as importantly, structurally forbids "..", ".", and "/" from
+# ever appearing, so an unvalidated key can't become a path-traversal or
+# arbitrary-file-write primitive.
+SafeFileName = Annotated[str, StringConstraints(pattern=r"^[0-9]+-[A-Za-z0-9_.-]+$")]
+FileContent = Annotated[str, Field(max_length=INPUT_FILE_MAX_LENGTH)]
 
 
 class SubmitRequest(BaseModel):
@@ -76,7 +88,10 @@ class SubmitRequest(BaseModel):
 class RunRequest(BaseModel):
     slug: str
     code: str = Field(max_length=CODE_MAX_LENGTH)
-    input: str = Field(max_length=INPUT_MAX_LENGTH)
+    inputs: Annotated[
+        dict[SafeFileName, FileContent],
+        Field(min_length=1, max_length=INPUT_FILE_MAX_COUNT),
+    ]
 
 
 def _client_ip(request: Request) -> str:
@@ -120,17 +135,23 @@ def _load_config(slug: str) -> dict:
     return yaml.safe_load(config_path.read_text())
 
 
-def _write_scratch_file(content: str, suffix: str) -> pathlib.Path:
-    """Write to the DooD-safe scratch dir (see the module docstring above)
-    and chmod world-readable, since the sandbox container reads this as a
-    non-root user. Shared by /submit and /run — both hand the judge a
-    script; /run also uses it for the ad-hoc input file.
+def _write_scratch_request(code: str, inputs: dict[str, str] | None = None) -> pathlib.Path:
+    """Stage one request under a fresh directory inside the DooD-safe
+    scratch dir (see the module docstring above): submission.sh plus any
+    named input files, each chmod'd world-readable since the sandbox
+    reads these as a non-root user. Still just a path under SCRATCH_DIR,
+    so the same-absolute-path DooD constraint is unaffected. Caller must
+    shutil.rmtree() the returned directory when done.
     """
-    with tempfile.NamedTemporaryFile("w", suffix=suffix, delete=False, dir=SCRATCH_DIR) as f:
-        f.write(content)
-        path = pathlib.Path(f.name)
-    path.chmod(0o644)
-    return path
+    scratch_dir = pathlib.Path(tempfile.mkdtemp(dir=SCRATCH_DIR))
+    submission_path = scratch_dir / "submission.sh"
+    submission_path.write_text(code)
+    submission_path.chmod(0o644)
+    for name, content in (inputs or {}).items():
+        input_path = scratch_dir / name
+        input_path.write_text(content)
+        input_path.chmod(0o644)
+    return scratch_dir
 
 
 @app.get("/problems")
@@ -153,12 +174,22 @@ def get_problem(slug: str):
     config = _load_config(slug)
     problem_dir = PROBLEMS_DIR / slug
     samples_dir = problem_dir / "tests" / "samples"
+    sample_dirs = sorted(
+        (p for p in samples_dir.iterdir() if p.is_dir() and p.name.isdigit()),
+        key=lambda p: int(p.name),
+    ) if samples_dir.is_dir() else []
     samples = [
         {
-            "input": in_file.read_text(),
-            "expected": in_file.with_suffix(".out").read_text().strip(),
+            "files": [
+                {"name": f.name, "content": f.read_text()}
+                for f in sorted(
+                    p for p in sample_dir.iterdir()
+                    if p.is_file() and p.name != "expected.out"
+                )
+            ],
+            "expected": (sample_dir / "expected.out").read_text().strip(),
         }
-        for in_file in sorted(samples_dir.glob("*.in"))
+        for sample_dir in sample_dirs
     ]
     return {
         **config,
@@ -174,11 +205,11 @@ def submit(req: SubmitRequest, request: Request):
     if not (PROBLEMS_DIR / req.slug / "tests").is_dir():
         raise HTTPException(status_code=404, detail=f"unknown problem: {req.slug}")
 
-    submission_path = _write_scratch_file(req.code, ".sh")
+    scratch_dir = _write_scratch_request(req.code)
     try:
-        return _run_judge(judge, req.slug, submission_path, PROBLEMS_DIR)
+        return _run_judge(judge, req.slug, scratch_dir / "submission.sh", PROBLEMS_DIR)
     finally:
-        submission_path.unlink(missing_ok=True)
+        shutil.rmtree(scratch_dir, ignore_errors=True)
 
 
 @app.post("/run")
@@ -187,10 +218,9 @@ def run(req: RunRequest, request: Request):
     if not (PROBLEMS_DIR / req.slug).is_dir():
         raise HTTPException(status_code=404, detail=f"unknown problem: {req.slug}")
 
-    submission_path = _write_scratch_file(req.code, ".sh")
-    input_path = _write_scratch_file(req.input, ".txt")
+    scratch_dir = _write_scratch_request(req.code, req.inputs)
     try:
-        return _run_judge(run_input, submission_path, input_path)
+        files = sorted((name, scratch_dir / name) for name in req.inputs)
+        return _run_judge(run_input, scratch_dir / "submission.sh", files)
     finally:
-        submission_path.unlink(missing_ok=True)
-        input_path.unlink(missing_ok=True)
+        shutil.rmtree(scratch_dir, ignore_errors=True)

@@ -8,8 +8,13 @@ export type ProblemSummary = {
   topics: string[];
 };
 
+export type ProblemInputFile = {
+  name: string;
+  content: string;
+};
+
 export type ProblemSample = {
-  input: string;
+  files: ProblemInputFile[];
   expected: string;
 };
 
@@ -63,18 +68,18 @@ export type RunResult = {
   exit_code: string;
 };
 
-// Never a grading pass, even when `input` happens to match a known
+// Never a grading pass, even when `inputs` happens to match a known
 // sample — this always just returns raw output. Comparing against a
 // sample's expected value (when applicable) is a client-side concern.
 export async function runSolution(
   slug: string,
   code: string,
-  input: string,
+  inputs: Record<string, string>,
 ): Promise<RunResult> {
   const res = await fetch(`${API_URL}/run`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ slug, code, input }),
+    body: JSON.stringify({ slug, code, inputs }),
   });
   if (!res.ok) throw new Error(`run failed (${res.status})`);
   return res.json();

@@ -14,7 +14,18 @@ MEM_LIMIT = "64m"
 PIDS_LIMIT = "64"
 
 
-def run_one(submission_path, input_path):
+def run_one(submission_path, files):
+    """files: ordered list of (name, host_path) tuples. Each is mounted
+    individually into /sandbox/input/<name>:ro and passed as a positional
+    arg in the same order — never a directory bind-mount of the source
+    test folder, since that folder sits right next to expected.out and
+    a directory mount would hand the submission a way to just cat it."""
+    mount_args, positional_args = [], []
+    for name, host_path in files:
+        target = f"/sandbox/input/{name}"
+        mount_args += ["-v", f"{host_path}:{target}:ro"]
+        positional_args.append(target)
+
     cid = subprocess.run(
         [
             "docker", "run", "-d",
@@ -28,9 +39,9 @@ def run_one(submission_path, input_path):
             "--read-only",
             "--tmpfs", "/tmp:rw,size=16m,mode=1777",
             "-v", f"{submission_path}:/sandbox/submission.sh:ro",
-            "-v", f"{input_path}:/sandbox/input.txt:ro",
+            *mount_args,
             IMAGE,
-            "bash", "/sandbox/submission.sh", "/sandbox/input.txt",
+            "bash", "/sandbox/submission.sh", *positional_args,
         ],
         capture_output=True, text=True, check=True,
     ).stdout.strip()
@@ -68,15 +79,28 @@ def judge(slug, submission_path, problems_dir):
     problems_dir = pathlib.Path(problems_dir).resolve()
     tests_dir = problems_dir / slug / "tests"
 
-    in_files = sorted(tests_dir.glob("*.in"))
-    if not in_files:
+    if not tests_dir.is_dir():
+        return {"slug": slug, "verdict": "No Tests Found", "tests": [], "elapsed_seconds": 0}
+
+    # Each test case is a directory of digit-only name (tests/1/, tests/2/,
+    # ...) containing its input files plus expected.out. Sort numerically,
+    # not lexically, so tests/10 doesn't land before tests/2.
+    test_dirs = sorted(
+        (p for p in tests_dir.iterdir() if p.is_dir() and p.name.isdigit()),
+        key=lambda p: int(p.name),
+    )
+    if not test_dirs:
         return {"slug": slug, "verdict": "No Tests Found", "tests": [], "elapsed_seconds": 0}
 
     tests = []
     t0 = time.time()
-    for in_file in in_files:
-        expected = in_file.with_suffix(".out").read_text().strip()
-        actual, exit_code = run_one(submission_path, in_file)
+    for test_dir in test_dirs:
+        expected = (test_dir / "expected.out").read_text().strip()
+        files = sorted(
+            (p.name, p) for p in test_dir.iterdir()
+            if p.is_file() and p.name != "expected.out"
+        )
+        actual, exit_code = run_one(submission_path, files)
         actual = actual.strip()
         # Grade on stdout only — tools like `grep -c` legitimately exit
         # non-zero on "no match" even when their output is correct.
@@ -84,7 +108,7 @@ def judge(slug, submission_path, problems_dir):
         # plain wrong answer.
         passed = actual == expected and exit_code != "timeout"
         tests.append({
-            "name": in_file.name,
+            "name": test_dir.name,
             "expected": expected,
             "actual": actual,
             "exit_code": exit_code,
@@ -106,16 +130,18 @@ def judge(slug, submission_path, problems_dir):
     }
 
 
-def run_input(submission_path, input_path):
-    """Run a submission against one ad-hoc input and return the raw output —
-    no expected value, no pass/fail. Used by /run (the "Run" button), which
-    is deliberately never a grading pass, even when the input happens to be
-    a known sample: there's nothing here to compare against for genuinely
-    custom input, so this never tries to.
+def run_input(submission_path, files):
+    """Run a submission against ad-hoc input files and return the raw
+    output — no expected value, no pass/fail. Used by /run (the "Run"
+    button), which is deliberately never a grading pass, even when the
+    input happens to match a known sample: there's nothing here to
+    compare against for genuinely custom input, so this never tries to.
+
+    files: ordered list of (name, path) tuples, same shape as run_one.
     """
     submission_path = pathlib.Path(submission_path).resolve()
-    input_path = pathlib.Path(input_path).resolve()
-    output, exit_code = run_one(submission_path, input_path)
+    files = [(name, pathlib.Path(p).resolve()) for name, p in files]
+    output, exit_code = run_one(submission_path, files)
     return {"output": output.strip(), "exit_code": exit_code}
 
 
