@@ -9,34 +9,49 @@ import { getStarredSlugs, getAttemptedSlugs, getSolvedSlugs } from "@/lib/local-
 
 export function Shortcuts() {
   const searchParams = useSearchParams();
-  const activeList = searchParams.get("list");
+  // Star and progress are independent filters (see problems-explorer.tsx),
+  // so they live in separate query params rather than one shared "list".
+  const activeProgress = searchParams.get("progress");
+  const activeStarred = searchParams.get("starred") === "1";
   const [starredCount, setStarredCount] = useState<number | null>(null);
-  const [submittedCount, setSubmittedCount] = useState<number | null>(null);
-  const [unfinishedCount, setUnfinishedCount] = useState<number | null>(null);
+  const [finishedCount, setFinishedCount] = useState<number | null>(null);
+  const [attemptedCount, setAttemptedCount] = useState<number | null>(null);
 
   useEffect(() => {
     const attempted = getAttemptedSlugs();
     const solved = getSolvedSlugs();
     setStarredCount(getStarredSlugs().size);
-    setSubmittedCount(attempted.size);
-    setUnfinishedCount([...attempted].filter((slug) => !solved.has(slug)).length);
+    setFinishedCount(solved.size);
+    setAttemptedCount([...attempted].filter((slug) => !solved.has(slug)).length);
   }, []);
 
   const items = [
-    { key: "starred", label: "Starred", icon: Star, count: starredCount },
-    { key: "submitted", label: "Submitted", icon: CheckCircle2, count: submittedCount },
-    { key: "unfinished", label: "Unfinished", icon: CircleDashed, count: unfinishedCount },
+    { href: "/problems?starred=1", label: "Starred", icon: Star, count: starredCount, active: activeStarred },
+    {
+      href: "/problems?progress=finished",
+      label: "Finished",
+      icon: CheckCircle2,
+      count: finishedCount,
+      active: activeProgress === "finished",
+    },
+    {
+      href: "/problems?progress=attempted",
+      label: "Attempted",
+      icon: CircleDashed,
+      count: attemptedCount,
+      active: activeProgress === "attempted",
+    },
   ];
 
   return (
     <div className="flex flex-col gap-1">
-      {items.map(({ key, label, icon: Icon, count }) => (
+      {items.map(({ href, label, icon: Icon, count, active }) => (
         <Link
-          key={key}
-          href={`/problems?list=${key}`}
+          key={href}
+          href={href}
           className={cn(
             "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm",
-            activeList === key
+            active
               ? "bg-accent font-medium text-accent-foreground"
               : "text-muted-foreground hover:bg-accent/50",
           )}

@@ -50,15 +50,17 @@ import { cn } from "@/lib/utils";
 const DIFFICULTIES = ["easy", "medium", "hard"];
 const DIFFICULTY_RANK: Record<string, number> = { easy: 1, medium: 2, hard: 3 };
 
+// Finished / Attempted / Not started are mutually exclusive and
+// exhaustive — every problem is in exactly one. Star is a separate,
+// orthogonal filter (a problem can be starred regardless of progress),
+// so it's not one of these values; see starredOnly below.
 const PROGRESS_OPTIONS = [
   { value: "all", label: "All" },
+  { value: "finished", label: "Finished" },
+  { value: "attempted", label: "Attempted" },
   { value: "not-started", label: "Not started" },
-  { value: "submitted", label: "Submitted" },
-  { value: "unfinished", label: "Unfinished" },
-  { value: "solved", label: "Solved" },
-  { value: "starred", label: "Starred" },
 ];
-const LIST_LABEL: Record<string, string> = Object.fromEntries(
+const PROGRESS_LABEL: Record<string, string> = Object.fromEntries(
   PROGRESS_OPTIONS.map((o) => [o.value, o.label]),
 );
 
@@ -113,7 +115,8 @@ function toggleInArray(arr: string[], value: string): string[] {
 export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const listFilter = searchParams.get("list");
+  const progressFilter = searchParams.get("progress");
+  const starredOnly = searchParams.get("starred") === "1";
 
   const [query, setQuery] = useState("");
   const [difficulty, setDifficulty] = useState("all");
@@ -143,8 +146,30 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
     router.push(`/problems/${pick.slug}`);
   }
 
+  // Progress and star are independent filters that can both be active
+  // at once (e.g. "starred AND not started"), so changing one must
+  // preserve the other's query param rather than overwriting the URL.
+  function updateParam(key: string, value: string | null) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value === null) params.delete(key);
+    else params.set(key, value);
+    const qs = params.toString();
+    router.push(qs ? `/problems?${qs}` : "/problems");
+  }
+
   function handleProgressChange(value: string) {
-    router.push(value === "all" ? "/problems" : `/problems?list=${value}`);
+    updateParam("progress", value === "all" ? null : value);
+  }
+
+  function handleToggleStarredOnly() {
+    updateParam("starred", starredOnly ? null : "1");
+  }
+
+  function hrefWithout(key: string): string {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete(key);
+    const qs = params.toString();
+    return qs ? `/problems?${qs}` : "/problems";
   }
 
   function handleClearFilters() {
@@ -175,7 +200,8 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
     difficulty !== "all",
     selectedTools.length > 0,
     selectedTopics.length > 0,
-    !!listFilter,
+    !!progressFilter,
+    starredOnly,
   ].filter(Boolean).length;
 
   const filtered = problems.filter((p) => {
@@ -184,14 +210,15 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
     const matchesTool = selectedTools.length === 0 || p.tools.some((t) => selectedTools.includes(t));
     const matchesTopic =
       selectedTopics.length === 0 || p.topics.some((t) => selectedTopics.includes(t));
-    const matchesList =
-      !listFilter ||
-      (listFilter === "starred" && starred.has(p.slug)) ||
-      (listFilter === "submitted" && attempted.has(p.slug)) ||
-      (listFilter === "unfinished" && attempted.has(p.slug) && !solved.has(p.slug)) ||
-      (listFilter === "solved" && solved.has(p.slug)) ||
-      (listFilter === "not-started" && !attempted.has(p.slug));
-    return matchesQuery && matchesDifficulty && matchesTool && matchesTopic && matchesList;
+    const matchesProgress =
+      !progressFilter ||
+      (progressFilter === "finished" && solved.has(p.slug)) ||
+      (progressFilter === "attempted" && attempted.has(p.slug) && !solved.has(p.slug)) ||
+      (progressFilter === "not-started" && !attempted.has(p.slug));
+    const matchesStar = !starredOnly || starred.has(p.slug);
+    return (
+      matchesQuery && matchesDifficulty && matchesTool && matchesTopic && matchesProgress && matchesStar
+    );
   });
 
   const sorted = useMemo(() => {
@@ -227,12 +254,21 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
       </Widget>
 
       <Widget bodyClassName="flex flex-wrap items-center gap-2">
-        {listFilter && (
+        {progressFilter && (
           <Link
-            href="/problems"
+            href={hrefWithout("progress")}
             className="flex items-center gap-1 rounded-full bg-accent px-2.5 py-1 text-xs text-accent-foreground"
           >
-            {LIST_LABEL[listFilter] ?? listFilter}
+            {PROGRESS_LABEL[progressFilter] ?? progressFilter}
+            <X className="size-3" />
+          </Link>
+        )}
+        {starredOnly && (
+          <Link
+            href={hrefWithout("starred")}
+            className="flex items-center gap-1 rounded-full bg-accent px-2.5 py-1 text-xs text-accent-foreground"
+          >
+            Starred
             <X className="size-3" />
           </Link>
         )}
@@ -245,6 +281,17 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
             className="h-8 pl-8 text-sm"
           />
         </div>
+
+        <Button
+          variant="outline"
+          size="icon"
+          className="size-8"
+          aria-label={starredOnly ? "Show all problems" : "Show starred problems only"}
+          aria-pressed={starredOnly}
+          onClick={handleToggleStarredOnly}
+        >
+          <Star className={starredOnly ? "size-4 fill-amber-400 text-amber-400" : "size-4"} />
+        </Button>
 
         <Popover open={filterOpen} onOpenChange={setFilterOpen}>
           <PopoverTrigger
@@ -284,7 +331,7 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-medium text-muted-foreground">Progress</label>
                 <Select
-                  value={listFilter ?? "all"}
+                  value={progressFilter ?? "all"}
                   onValueChange={(v) => handleProgressChange(v ?? "all")}
                 >
                   <SelectTrigger size="sm" className="w-full">
