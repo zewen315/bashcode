@@ -397,6 +397,33 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
       </Widget>
 
       <Widget bodyClassName="p-0" className="overflow-hidden">
+        {pageCount > 1 && (
+          <div className="flex items-center justify-between gap-2 border-b px-4 py-2 text-sm">
+            <span className="text-xs text-muted-foreground">
+              Page {page} of {pageCount}
+            </span>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                <ChevronLeft className="size-4" />
+                Prev
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page >= pageCount}
+                onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+              >
+                Next
+                <ChevronRight className="size-4" />
+              </Button>
+            </div>
+          </div>
+        )}
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
@@ -497,33 +524,6 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
             )}
           </TableBody>
         </Table>
-        {pageCount > 1 && (
-          <div className="flex items-center justify-between gap-2 border-t px-4 py-2 text-sm">
-            <span className="text-xs text-muted-foreground">
-              Page {page} of {pageCount}
-            </span>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-              >
-                <ChevronLeft className="size-4" />
-                Prev
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page >= pageCount}
-                onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-              >
-                Next
-                <ChevronRight className="size-4" />
-              </Button>
-            </div>
-          </div>
-        )}
       </Widget>
     </div>
   );
