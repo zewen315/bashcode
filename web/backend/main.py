@@ -2,11 +2,14 @@ import os
 import pathlib
 import sys
 import tempfile
+import threading
+import time
+from collections import defaultdict
 
 import yaml
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "judge"))
 from run_submission import judge, run_input  # noqa: E402
@@ -43,16 +46,71 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# --- Abuse/exhaustion protections -------------------------------------
+# The sandbox itself (network=none, cap-drop=ALL, pids/mem/cpu limits,
+# disposable per-run) is a real boundary, verified end to end earlier —
+# but it's not the actual near-term risk on a 1GB droplet. Nothing
+# stopped concurrent submissions from collectively exceeding the box's
+# total RAM, or a single client from hammering the endpoint. These three
+# are deliberately simple (in-process, no Redis) — right for the current
+# scale; revisit if the backend ever runs as more than one instance.
+
+MAX_CONCURRENT_JUDGE_RUNS = int(os.environ.get("MAX_CONCURRENT_JUDGE_RUNS", "4"))
+JUDGE_QUEUE_WAIT_S = 10
+_judge_semaphore = threading.Semaphore(MAX_CONCURRENT_JUDGE_RUNS)
+
+RATE_LIMIT_MAX_REQUESTS = int(os.environ.get("RATE_LIMIT_MAX_REQUESTS", "10"))
+RATE_LIMIT_WINDOW_S = int(os.environ.get("RATE_LIMIT_WINDOW_S", "60"))
+_rate_limit_lock = threading.Lock()
+_rate_limit_log: dict[str, list[float]] = defaultdict(list)
+
+CODE_MAX_LENGTH = 20_000
+INPUT_MAX_LENGTH = 1_000_000
+
 
 class SubmitRequest(BaseModel):
     slug: str
-    code: str
+    code: str = Field(max_length=CODE_MAX_LENGTH)
 
 
 class RunRequest(BaseModel):
     slug: str
-    code: str
-    input: str
+    code: str = Field(max_length=CODE_MAX_LENGTH)
+    input: str = Field(max_length=INPUT_MAX_LENGTH)
+
+
+def _client_ip(request: Request) -> str:
+    # Caddy sets X-Forwarded-For when reverse-proxying in production;
+    # request.client.host would otherwise just be Caddy's own container.
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
+def _check_rate_limit(request: Request):
+    ip = _client_ip(request)
+    now = time.time()
+    with _rate_limit_lock:
+        recent = [t for t in _rate_limit_log[ip] if now - t < RATE_LIMIT_WINDOW_S]
+        if len(recent) >= RATE_LIMIT_MAX_REQUESTS:
+            raise HTTPException(status_code=429, detail="Too many requests — slow down")
+        recent.append(now)
+        _rate_limit_log[ip] = recent
+
+
+def _run_judge(fn, *args):
+    """Runs a judge invocation (fn) behind the concurrency semaphore.
+    Waits up to JUDGE_QUEUE_WAIT_S for a free slot rather than queueing
+    forever — past that, the box is genuinely at capacity and callers
+    should back off instead of piling up.
+    """
+    if not _judge_semaphore.acquire(timeout=JUDGE_QUEUE_WAIT_S):
+        raise HTTPException(status_code=429, detail="Judge is at capacity — try again shortly")
+    try:
+        return fn(*args)
+    finally:
+        _judge_semaphore.release()
 
 
 def _load_config(slug: str) -> dict:
@@ -111,26 +169,28 @@ def get_problem(slug: str):
 
 
 @app.post("/submit")
-def submit(req: SubmitRequest):
+def submit(req: SubmitRequest, request: Request):
+    _check_rate_limit(request)
     if not (PROBLEMS_DIR / req.slug / "tests").is_dir():
         raise HTTPException(status_code=404, detail=f"unknown problem: {req.slug}")
 
     submission_path = _write_scratch_file(req.code, ".sh")
     try:
-        return judge(req.slug, submission_path, PROBLEMS_DIR)
+        return _run_judge(judge, req.slug, submission_path, PROBLEMS_DIR)
     finally:
         submission_path.unlink(missing_ok=True)
 
 
 @app.post("/run")
-def run(req: RunRequest):
+def run(req: RunRequest, request: Request):
+    _check_rate_limit(request)
     if not (PROBLEMS_DIR / req.slug).is_dir():
         raise HTTPException(status_code=404, detail=f"unknown problem: {req.slug}")
 
     submission_path = _write_scratch_file(req.code, ".sh")
     input_path = _write_scratch_file(req.input, ".txt")
     try:
-        return run_input(submission_path, input_path)
+        return _run_judge(run_input, submission_path, input_path)
     finally:
         submission_path.unlink(missing_ok=True)
         input_path.unlink(missing_ok=True)
