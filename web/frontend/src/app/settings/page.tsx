@@ -12,33 +12,29 @@ import {
   AlertDialogFooter,
   AlertDialogClose,
 } from "@/components/ui/alert-dialog";
+import { useToastManager } from "@/components/ui/toast";
 import { Footer } from "@/components/footer";
 import { ProfileEditor } from "@/components/profile-editor";
-import { getCurrentUser, type AuthUser } from "@/lib/auth";
+import { useAuth } from "@/lib/auth-context";
 import { deleteAccount } from "@/lib/account";
 
 export default function SettingsPage() {
   const router = useRouter();
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [loaded, setLoaded] = useState(false);
+  const { user, loading, setUser } = useAuth();
+  const { add: addToast } = useToastManager();
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
-    getCurrentUser().then((u) => {
-      if (!u) {
-        router.replace("/problems");
-        return;
-      }
-      setUser(u);
-      setLoaded(true);
-    });
-  }, [router]);
+    if (!loading && !user) router.replace("/problems");
+  }, [loading, user, router]);
 
   async function handleDelete() {
     setDeleting(true);
     try {
       await deleteAccount();
+      setUser(null);
+      addToast({ title: "Account deleted" });
       router.replace("/problems");
     } catch {
       setDeleteError("Couldn't delete your account — try again.");
@@ -46,7 +42,7 @@ export default function SettingsPage() {
     }
   }
 
-  if (!loaded || !user) return null;
+  if (loading || !user) return null;
 
   return (
     <>

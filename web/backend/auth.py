@@ -6,6 +6,7 @@ import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta, timezone
 
+import psycopg
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 
@@ -133,6 +134,9 @@ def _fetch_profile(provider: str, cfg: dict, access_token: str) -> dict:
     }
 
 
+PUBLIC_ID_UNIQUE_CONSTRAINT = "users_public_id_key"
+
+
 def _get_or_create_user(
     provider: str, provider_user_id: str, email: str | None, display_name: str | None, avatar_url: str | None
 ) -> tuple[int, bool]:
@@ -154,25 +158,87 @@ def _get_or_create_user(
                 )
                 return row[0], False
 
-            # No auto-linking by email across providers, by design — a
-            # matching email on another provider still gets a distinct
-            # account. See docs/decisions/0002-oauth-login-sessions.md.
-            # provider_avatar_url is set once here and never touched
-            # again — the immutable original, used to restore the
-            # avatar toggle in account.py after it's been turned off.
+    # Not found — create a new user. This is its own connection/
+    # transaction (not reusing the one above) because a public_id
+    # collision needs a real retry with a fresh transaction: after a
+    # UniqueViolation, Postgres leaves the transaction aborted until a
+    # rollback, so retrying just the INSERT statement in place isn't
+    # an option — retrying the whole block with a fresh connection is
+    # the simplest correct way to get a new public_id and try again.
+    last_error: Exception | None = None
+    for _ in range(5):
+        public_id = secrets.token_hex(4)
+        try:
+            with db.pool.connection() as conn:
+                with conn.cursor() as cur:
+                    # No auto-linking by email across providers, by
+                    # design — a matching email on another provider
+                    # still gets a distinct account. See
+                    # docs/decisions/0002-oauth-login-sessions.md.
+                    # provider_avatar_url is set once here and never
+                    # touched again — the immutable original, used to
+                    # restore the avatar toggle in account.py after
+                    # it's been turned off.
+                    cur.execute(
+                        """
+                        INSERT INTO users (email, display_name, avatar_url, provider_avatar_url, public_id)
+                        VALUES (%s, %s, %s, %s, %s) RETURNING id
+                        """,
+                        (email, display_name, avatar_url, avatar_url, public_id),
+                    )
+                    user_id = cur.fetchone()[0]
+                    cur.execute(
+                        "INSERT INTO oauth_identities (user_id, provider, provider_user_id, email) VALUES (%s, %s, %s, %s)",
+                        (user_id, provider, provider_user_id, email),
+                    )
+                    return user_id, True
+        except psycopg.errors.UniqueViolation as exc:
+            # Only retry a genuine public_id collision (astronomically
+            # unlikely at this scale, but correctness shouldn't rely on
+            # that) — any other UniqueViolation (e.g. a near-simultaneous
+            # duplicate callback for the same brand-new identity racing
+            # the oauth_identities constraint) should propagate and be
+            # treated as a failed login by the caller, not silently
+            # retried into a duplicate account.
+            if exc.diag.constraint_name != PUBLIC_ID_UNIQUE_CONSTRAINT:
+                raise
+            last_error = exc
+            continue
+    raise RuntimeError("could not generate a unique public_id") from last_error
+
+
+def _row_to_user_dict(row) -> dict:
+    user_id, display_name, avatar_url, provider_avatar_url, email, public_id, provider, created_at = row
+    return {
+        "id": user_id,
+        "display_name": display_name,
+        "avatar_url": avatar_url,
+        "provider_avatar_url": provider_avatar_url,
+        "email": email,
+        "public_id": public_id,
+        "provider": provider,
+        "created_at": created_at.isoformat(),
+    }
+
+
+def fetch_user(user_id: int) -> dict | None:
+    """Shared by /me and every account.py endpoint that returns a user,
+    so the AuthUser shape can't drift between them.
+    """
+    with db.pool.connection() as conn:
+        with conn.cursor() as cur:
             cur.execute(
                 """
-                INSERT INTO users (email, display_name, avatar_url, provider_avatar_url)
-                VALUES (%s, %s, %s, %s) RETURNING id
+                SELECT users.id, users.display_name, users.avatar_url, users.provider_avatar_url,
+                       users.email, users.public_id, oauth_identities.provider, users.created_at
+                FROM users
+                JOIN oauth_identities ON oauth_identities.user_id = users.id
+                WHERE users.id = %s
                 """,
-                (email, display_name, avatar_url, avatar_url),
+                (user_id,),
             )
-            user_id = cur.fetchone()[0]
-            cur.execute(
-                "INSERT INTO oauth_identities (user_id, provider, provider_user_id, email) VALUES (%s, %s, %s, %s)",
-                (user_id, provider, provider_user_id, email),
-            )
-            return user_id, True
+            row = cur.fetchone()
+    return _row_to_user_dict(row) if row else None
 
 
 @router.get("/{provider}/login")
@@ -264,28 +330,14 @@ def me(request: Request):
     with db.pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                """
-                SELECT users.id, users.display_name, users.avatar_url, users.provider_avatar_url, users.email
-                FROM sessions
-                JOIN users ON users.id = sessions.user_id
-                WHERE sessions.token = %s AND sessions.expires_at > now()
-                """,
+                "SELECT user_id FROM sessions WHERE token = %s AND expires_at > now()",
                 (token,),
             )
             row = cur.fetchone()
 
     if not row:
         return {"user": None}
-    user_id, display_name, avatar_url, provider_avatar_url, email = row
-    return {
-        "user": {
-            "id": user_id,
-            "display_name": display_name,
-            "avatar_url": avatar_url,
-            "provider_avatar_url": provider_avatar_url,
-            "email": email,
-        }
-    }
+    return {"user": fetch_user(row[0])}
 
 
 def require_user_id(request: Request) -> int:

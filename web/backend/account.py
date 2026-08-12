@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 from PIL import Image, ImageOps
 
 import db
-from auth import SESSION_COOKIE_NAME, require_user_id
+from auth import SESSION_COOKIE_NAME, fetch_user, require_user_id
 from ratelimit import check_rate_limit
 
 DISPLAY_NAME_MAX_LENGTH = 100
@@ -36,25 +36,6 @@ router = APIRouter(prefix="/account", tags=["account"])
 class ProfileUpdate(BaseModel):
     display_name: str | None = Field(default=None, max_length=DISPLAY_NAME_MAX_LENGTH)
     use_provider_avatar: bool | None = None
-
-
-def _user_dict(row) -> dict:
-    user_id, display_name, avatar_url, provider_avatar_url, email = row
-    return {
-        "id": user_id,
-        "display_name": display_name,
-        "avatar_url": avatar_url,
-        "provider_avatar_url": provider_avatar_url,
-        "email": email,
-    }
-
-
-def _fetch_user(cur, user_id: int) -> dict:
-    cur.execute(
-        "SELECT id, display_name, avatar_url, provider_avatar_url, email FROM users WHERE id = %s",
-        (user_id,),
-    )
-    return _user_dict(cur.fetchone())
 
 
 def _delete_avatar_file_if_owned(avatar_url: str | None) -> None:
@@ -125,10 +106,8 @@ def update_profile(req: ProfileUpdate, request: Request):
                 else:
                     cur.execute("UPDATE users SET avatar_url = NULL WHERE id = %s", (user_id,))
 
-            user = _fetch_user(cur, user_id)
-
     _delete_avatar_file_if_owned(old_avatar_url)
-    return {"user": user}
+    return {"user": fetch_user(user_id)}
 
 
 @router.post("/avatar")
@@ -155,10 +134,9 @@ def upload_avatar(request: Request, file: UploadFile = File(...)):
             cur.execute("SELECT avatar_url FROM users WHERE id = %s", (user_id,))
             old_avatar_url = cur.fetchone()[0]
             cur.execute("UPDATE users SET avatar_url = %s WHERE id = %s", (new_avatar_url, user_id))
-            user = _fetch_user(cur, user_id)
 
     _delete_avatar_file_if_owned(old_avatar_url)
-    return {"user": user}
+    return {"user": fetch_user(user_id)}
 
 
 @router.get("/uploads/avatars/{filename}")

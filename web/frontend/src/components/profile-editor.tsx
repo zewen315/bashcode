@@ -4,6 +4,7 @@ import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useToastManager } from "@/components/ui/toast";
 import { initials, type AuthUser } from "@/lib/auth";
 import { updateProfile, uploadAvatar } from "@/lib/account";
 
@@ -18,6 +19,7 @@ export function ProfileEditor({
   onUserChange: (user: AuthUser) => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { add: addToast } = useToastManager();
   const [displayName, setDisplayName] = useState(user.display_name ?? "");
   const [saving, setSaving] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
@@ -33,6 +35,7 @@ export function ProfileEditor({
       const updated = await updateProfile({ display_name: name });
       onUserChange(updated);
       setDisplayName(updated.display_name ?? "");
+      addToast({ title: "Display name saved" });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't save — try again.");
     } finally {
@@ -63,6 +66,7 @@ export function ProfileEditor({
     try {
       const updated = await uploadAvatar(file);
       onUserChange(updated);
+      addToast({ title: "Photo updated" });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't upload — try again.");
     } finally {
@@ -76,6 +80,7 @@ export function ProfileEditor({
     try {
       const updated = await updateProfile({ use_provider_avatar: true });
       onUserChange(updated);
+      addToast({ title: "Photo updated" });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't update avatar — try again.");
     } finally {
@@ -89,6 +94,7 @@ export function ProfileEditor({
     try {
       const updated = await updateProfile({ use_provider_avatar: false });
       onUserChange(updated);
+      addToast({ title: "Photo removed" });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't update avatar — try again.");
     } finally {

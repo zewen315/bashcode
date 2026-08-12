@@ -3,6 +3,8 @@ import { Inter, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { NavBar } from "@/components/nav-bar";
 import { BetaBanner } from "@/components/beta-banner";
+import { AuthProvider } from "@/lib/auth-context";
+import { ToastProvider, Toaster } from "@/components/ui/toast";
 import "./globals.css";
 
 const inter = Inter({
@@ -29,9 +31,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-          <BetaBanner />
-          <NavBar />
-          {children}
+          <ToastProvider>
+            <AuthProvider>
+              <BetaBanner />
+              <NavBar />
+              {children}
+              <Toaster />
+            </AuthProvider>
+          </ToastProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -12,6 +12,9 @@ export type AuthUser = {
   avatar_url: string | null;
   provider_avatar_url: string | null;
   email: string | null;
+  public_id: string;
+  provider: string;
+  created_at: string;
 };
 
 export async function getCurrentUser(): Promise<AuthUser | null> {
@@ -23,6 +26,15 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
 
 export async function signOut(): Promise<void> {
   await fetch("/api/auth/logout", { method: "POST" });
+}
+
+const PROVIDER_LABELS: Record<string, string> = {
+  github: "GitHub",
+  google: "Google",
+};
+
+export function providerLabel(provider: string): string {
+  return PROVIDER_LABELS[provider] ?? provider;
 }
 
 export function initials(name: string | null): string {

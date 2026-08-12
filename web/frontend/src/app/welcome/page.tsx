@@ -1,30 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Footer } from "@/components/footer";
 import { ProfileEditor } from "@/components/profile-editor";
-import { getCurrentUser, type AuthUser } from "@/lib/auth";
+import { useAuth } from "@/lib/auth-context";
 
 export default function WelcomePage() {
   const router = useRouter();
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [loaded, setLoaded] = useState(false);
+  const { user, loading, setUser } = useAuth();
 
   useEffect(() => {
-    getCurrentUser().then((u) => {
-      if (!u) {
-        router.replace("/problems");
-        return;
-      }
-      setUser(u);
-      setLoaded(true);
-    });
-  }, [router]);
+    if (!loading && !user) router.replace("/problems");
+  }, [loading, user, router]);
 
-  if (!loaded || !user) return null;
+  if (loading || !user) return null;
 
   return (
     <>
