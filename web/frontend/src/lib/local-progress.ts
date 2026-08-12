@@ -6,7 +6,7 @@ const SOLVED_KEY = "bashcode:solved";
 const STARRED_KEY = "bashcode:starred";
 const ATTEMPTED_KEY = "bashcode:attempted";
 const ACTIVITY_KEY = "bashcode:activity";
-const ACTIVITY_LIMIT = 15;
+export const ACTIVITY_LIMIT = 15;
 
 export type ActivityEntry = {
   slug: string;
