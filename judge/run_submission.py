@@ -106,6 +106,19 @@ def judge(slug, submission_path, problems_dir):
     }
 
 
+def run_input(submission_path, input_path):
+    """Run a submission against one ad-hoc input and return the raw output —
+    no expected value, no pass/fail. Used by /run (the "Run" button), which
+    is deliberately never a grading pass, even when the input happens to be
+    a known sample: there's nothing here to compare against for genuinely
+    custom input, so this never tries to.
+    """
+    submission_path = pathlib.Path(submission_path).resolve()
+    input_path = pathlib.Path(input_path).resolve()
+    output, exit_code = run_one(submission_path, input_path)
+    return {"output": output.strip(), "exit_code": exit_code}
+
+
 def main():
     if len(sys.argv) < 3:
         print("usage: run_submission.py <slug> <submission.sh> [problems_dir]")

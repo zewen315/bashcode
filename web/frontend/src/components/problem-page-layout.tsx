@@ -85,7 +85,7 @@ export function ProblemPageLayout({ problem }: { problem: ProblemDetail }) {
           </ResizablePanel>
           <ResizableHandle withHandle />
           <ResizablePanel defaultSize={58} minSize={30}>
-            <ProblemWorkspace slug={problem.slug} starterCode={problem.starter_code} />
+            <ProblemWorkspace slug={problem.slug} starterCode={problem.starter_code} samples={problem.samples} />
           </ResizablePanel>
         </ResizablePanelGroup>
       </main>
@@ -110,7 +110,7 @@ export function ProblemPageLayout({ problem }: { problem: ProblemDetail }) {
         </TabsContent>
       </Tabs>
       <div className="h-[70vh] border-t">
-        <ProblemWorkspace slug={problem.slug} starterCode={problem.starter_code} />
+        <ProblemWorkspace slug={problem.slug} starterCode={problem.starter_code} samples={problem.samples} />
       </div>
     </main>
   );
