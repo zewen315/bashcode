@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import { Widget } from "@/components/widget";
 import { StatusChart } from "@/components/status-chart";
 import { MiniCalendar } from "@/components/mini-calendar";
+import { Leaderboard } from "@/components/leaderboard";
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -42,6 +43,9 @@ export default function ProfilePage() {
         </Widget>
         <Widget>
           <MiniCalendar today={new Date()} />
+        </Widget>
+        <Widget title="Leaderboard">
+          <Leaderboard />
         </Widget>
       </div>
     </>

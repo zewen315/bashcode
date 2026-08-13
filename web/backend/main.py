@@ -323,10 +323,16 @@ def submit(req: SubmitRequest, request: Request):
                 with conn.cursor() as cur:
                     cur.execute(
                         """
-                        INSERT INTO submissions (user_id, slug, verdict, details)
-                        VALUES (%s, %s, %s, %s)
+                        INSERT INTO submissions (user_id, slug, verdict, details, code)
+                        VALUES (%s, %s, %s, %s, %s)
                         """,
-                        (user_id, req.slug, result["verdict"], Json(_submission_details(result))),
+                        (
+                            user_id,
+                            req.slug,
+                            result["verdict"],
+                            Json(_submission_details(result)),
+                            req.code,
+                        ),
                     )
         except Exception as exc:  # noqa: BLE001
             print(f"Failed to record submission for user {user_id}: {exc}", file=sys.stderr)

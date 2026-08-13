@@ -92,10 +92,7 @@ export function CommentComposer({
           </div>
         </TabsContent>
       </Tabs>
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-muted-foreground">
-          Supports Markdown — use ``` for code blocks.
-        </p>
+      <div className="flex items-center justify-end">
         <div className="flex gap-2">
           {onCancel && (
             <Button variant="outline" size="sm" onClick={onCancel}>

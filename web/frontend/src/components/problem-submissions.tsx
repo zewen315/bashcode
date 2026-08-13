@@ -107,15 +107,27 @@ function SubmissionRow({
         row
       )}
       {clickable && expanded && (
-        <div className="border-t p-2">
+        <div className="flex flex-col gap-2 border-t p-2">
           {loading ? (
             <p className="text-xs text-muted-foreground">Loading…</p>
-          ) : !detail || !detail.details ? (
+          ) : !detail || (!detail.details && !detail.code) ? (
             <p className="text-xs text-muted-foreground">
               Details aren&apos;t available for this older submission.
             </p>
           ) : (
-            <SubmissionResult result={{ verdict: detail.verdict, ...detail.details }} />
+            <>
+              {detail.details && (
+                <SubmissionResult result={{ verdict: detail.verdict, ...detail.details }} />
+              )}
+              {detail.code && (
+                <div>
+                  <p className="mb-1 text-xs font-medium text-muted-foreground">Submitted code</p>
+                  <pre className="overflow-x-auto rounded bg-muted p-2 font-mono text-xs whitespace-pre">
+                    {detail.code}
+                  </pre>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}

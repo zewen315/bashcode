@@ -103,9 +103,11 @@ export function DiscussionsFeed() {
 
   return (
     <div className="flex flex-col gap-4">
-      {items.map((item) => (
-        <FeedCard key={item.id} item={item} now={now} />
-      ))}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        {items.map((item) => (
+          <FeedCard key={item.id} item={item} now={now} />
+        ))}
+      </div>
       {cursor !== null && (
         <Button
           variant="outline"

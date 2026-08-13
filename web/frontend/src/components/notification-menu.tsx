@@ -60,7 +60,7 @@ export function NotificationMenu() {
     );
   }
 
-  async function handleMarkRead(id: number) {
+  async function handleMarkRead(id: string) {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
     await markRead(id);
   }
@@ -101,22 +101,39 @@ export function NotificationMenu() {
           </DropdownMenuGroup>
         ) : (
           <DropdownMenuGroup>
-            {notifications.slice(0, WIDGET_LIMIT).map((n) => (
-              <DropdownMenuItem
-                key={n.id}
-                onClick={() => !n.read && handleMarkRead(n.id)}
-                className="flex-col items-start gap-0.5 whitespace-normal"
-              >
-                <div className="flex w-full items-center gap-1.5">
-                  {!n.read && <span className="size-1.5 shrink-0 rounded-full bg-primary" />}
-                  <span className="font-medium">{n.title}</span>
-                  <span className="ml-auto shrink-0 text-xs text-muted-foreground">
-                    {relativeTime(new Date(n.created_at).getTime(), now)}
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground">{n.body}</p>
-              </DropdownMenuItem>
-            ))}
+            {notifications.slice(0, WIDGET_LIMIT).map((n) => {
+              const content = (
+                <>
+                  <div className="flex w-full items-center gap-1.5">
+                    {!n.read && <span className="size-1.5 shrink-0 rounded-full bg-primary" />}
+                    <span className="font-medium">{n.title}</span>
+                    <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+                      {relativeTime(new Date(n.created_at).getTime(), now)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{n.body}</p>
+                </>
+              );
+              const className = "flex-col items-start gap-0.5 whitespace-normal";
+              return n.link ? (
+                <DropdownMenuLinkItem
+                  key={n.id}
+                  render={<Link href={n.link} />}
+                  onClick={() => !n.read && handleMarkRead(n.id)}
+                  className={className}
+                >
+                  {content}
+                </DropdownMenuLinkItem>
+              ) : (
+                <DropdownMenuItem
+                  key={n.id}
+                  onClick={() => !n.read && handleMarkRead(n.id)}
+                  className={className}
+                >
+                  {content}
+                </DropdownMenuItem>
+              );
+            })}
           </DropdownMenuGroup>
         )}
         {unreadCount > 0 && (

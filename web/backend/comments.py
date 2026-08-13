@@ -1,11 +1,13 @@
 import os
 import pathlib
+import sys
 
 import yaml
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
 import db
+import notify
 from auth import get_user_id_or_none, require_user_id
 
 MAX_BODY_LENGTH = 10_000
@@ -116,17 +118,19 @@ def create_comment(slug: str, req: CommentCreate, request: Request):
     if len(body) > MAX_BODY_LENGTH:
         raise HTTPException(status_code=400, detail="comment body is too long")
 
+    parent_author_id = None
     with db.pool.connection() as conn:
         with conn.cursor() as cur:
             if req.parent_id is not None:
                 cur.execute(
-                    "SELECT slug, parent_id FROM comments WHERE id = %s", (req.parent_id,)
+                    "SELECT slug, parent_id, user_id FROM comments WHERE id = %s", (req.parent_id,)
                 )
                 parent = cur.fetchone()
                 if parent is None or parent[0] != slug:
                     raise HTTPException(status_code=400, detail="parent comment not found")
                 if parent[1] is not None:
                     raise HTTPException(status_code=400, detail="replies cannot be nested further")
+                parent_author_id = parent[2]
 
             cur.execute(
                 """
@@ -142,6 +146,20 @@ def create_comment(slug: str, req: CommentCreate, request: Request):
             )
             display_name, avatar_url, public_id = cur.fetchone()
         conn.commit()
+
+    # Best-effort: notify the parent comment's author that they got a
+    # reply. Never the replier themselves, and never a deleted account
+    # (parent_author_id is NULL after 0013's ON DELETE SET NULL).
+    if parent_author_id is not None and parent_author_id != user_id:
+        try:
+            notify.create_notification(
+                parent_author_id,
+                "New reply",
+                f"{display_name or 'Someone'} replied to your comment on {_problem_title(slug) or slug}.",
+                link=f"/problems/{slug}?tab=discussion",
+            )
+        except Exception as exc:  # noqa: BLE001
+            print(f"Failed to create reply notification for user {parent_author_id}: {exc}", file=sys.stderr)
 
     return {
         "id": new_id,

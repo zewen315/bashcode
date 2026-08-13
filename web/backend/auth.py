@@ -11,6 +11,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 
 import db
+import notify
 from ratelimit import check_rate_limit
 
 # Single source of truth for computing OAuth redirect_uris, the
@@ -314,6 +315,16 @@ def callback(provider: str, request: Request):
 
     # New accounts land on the one-time onboarding nudge instead of
     # straight to /problems — see docs/decisions/0005-onboarding-nudge.md.
+    if is_new:
+        try:
+            notify.create_notification(
+                user_id,
+                "Welcome to BashCode",
+                "Thanks for signing up — please take a moment to read our Terms of Service before you dive in.",
+                link="/terms",
+            )
+        except Exception as exc:  # noqa: BLE001
+            print(f"Failed to create welcome notification for user {user_id}: {exc}", file=sys.stderr)
     destination = "welcome" if is_new else "problems"
     resp = RedirectResponse(f"{PUBLIC_BASE_URL}/{destination}", status_code=302)
     resp.delete_cookie(cookie_name, path="/")

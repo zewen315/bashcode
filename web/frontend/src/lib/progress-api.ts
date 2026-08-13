@@ -5,8 +5,9 @@ export type SubmissionDetail = {
   slug: string;
   verdict: SubmissionResultData["verdict"];
   submitted_at: number;
-  // null for submissions made before the details column existed.
+  // null for submissions made before the details/code columns existed.
   details: Omit<SubmissionResultData, "verdict"> | null;
+  code: string | null;
 };
 
 export type ProgressData = {

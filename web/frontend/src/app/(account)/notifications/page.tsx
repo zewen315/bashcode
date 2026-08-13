@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
 import { listNotifications, markRead, markAllRead, type Notification } from "@/lib/notifications";
@@ -39,7 +40,7 @@ export default function NotificationsPage() {
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  async function handleMarkRead(id: number) {
+  async function handleMarkRead(id: string) {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
     await markRead(id);
   }
@@ -64,23 +65,39 @@ export default function NotificationsPage() {
         <p className="text-sm text-muted-foreground">No notifications yet.</p>
       ) : (
         <div className="flex flex-col gap-1">
-          {notifications.map((n) => (
-            <button
-              key={n.id}
-              onClick={() => !n.read && handleMarkRead(n.id)}
-              disabled={n.read}
-              className="flex flex-col gap-0.5 rounded-md border px-4 py-3 text-left disabled:cursor-default"
-            >
-              <div className="flex w-full items-center gap-1.5">
-                {!n.read && <span className="size-1.5 shrink-0 rounded-full bg-primary" />}
-                <span className="text-sm font-medium">{n.title}</span>
-                <span className="ml-auto shrink-0 text-xs text-muted-foreground">
-                  {relativeTime(new Date(n.created_at).getTime(), now)}
-                </span>
-              </div>
-              <p className="text-sm text-muted-foreground">{n.body}</p>
-            </button>
-          ))}
+          {notifications.map((n) => {
+            const content = (
+              <>
+                <div className="flex w-full items-center gap-1.5">
+                  {!n.read && <span className="size-1.5 shrink-0 rounded-full bg-primary" />}
+                  <span className="text-sm font-medium">{n.title}</span>
+                  <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+                    {relativeTime(new Date(n.created_at).getTime(), now)}
+                  </span>
+                </div>
+                <p className="text-sm text-muted-foreground">{n.body}</p>
+              </>
+            );
+            return n.link ? (
+              <Link
+                key={n.id}
+                href={n.link}
+                onClick={() => !n.read && handleMarkRead(n.id)}
+                className="flex flex-col gap-0.5 rounded-md border px-4 py-3 text-left"
+              >
+                {content}
+              </Link>
+            ) : (
+              <button
+                key={n.id}
+                onClick={() => !n.read && handleMarkRead(n.id)}
+                disabled={n.read}
+                className="flex flex-col gap-0.5 rounded-md border px-4 py-3 text-left disabled:cursor-default"
+              >
+                {content}
+              </button>
+            );
+          })}
         </div>
       )}
     </>

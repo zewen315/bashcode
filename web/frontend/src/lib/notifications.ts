@@ -1,9 +1,10 @@
 export type Notification = {
-  id: number;
+  id: string;
   title: string;
   body: string;
   created_at: string;
   read: boolean;
+  link: string | null;
 };
 
 export async function listNotifications(): Promise<Notification[]> {
@@ -13,7 +14,7 @@ export async function listNotifications(): Promise<Notification[]> {
   return data.notifications;
 }
 
-export async function markRead(id: number): Promise<void> {
+export async function markRead(id: string): Promise<void> {
   await fetch(`/api/notifications/${id}/read`, { method: "POST" });
 }
 

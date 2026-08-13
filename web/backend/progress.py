@@ -98,7 +98,7 @@ def get_submission_detail(submission_id: int, request: Request):
         with conn.cursor() as cur:
             cur.execute(
                 """
-                SELECT slug, verdict, submitted_at, details FROM submissions
+                SELECT slug, verdict, submitted_at, details, code FROM submissions
                 WHERE id = %s AND user_id = %s
                 """,
                 (submission_id, user_id),
@@ -106,12 +106,13 @@ def get_submission_detail(submission_id: int, request: Request):
             row = cur.fetchone()
     if row is None:
         raise HTTPException(status_code=404, detail="submission not found")
-    slug, verdict, submitted_at, details = row
+    slug, verdict, submitted_at, details, code = row
     return {
         "slug": slug,
         "verdict": verdict,
         "submitted_at": int(submitted_at.timestamp() * 1000),
         "details": details,
+        "code": code,
     }
 
 
