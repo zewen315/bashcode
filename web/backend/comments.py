@@ -201,9 +201,19 @@ def vote_comment(comment_id: int, req: VoteRequest, request: Request):
         raise HTTPException(status_code=400, detail="value must be 1 or -1")
     with db.pool.connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT 1 FROM comments WHERE id = %s", (comment_id,))
-            if cur.fetchone() is None:
+            cur.execute("SELECT slug, user_id FROM comments WHERE id = %s", (comment_id,))
+            comment = cur.fetchone()
+            if comment is None:
                 raise HTTPException(status_code=404, detail="comment not found")
+            comment_slug, comment_author_id = comment
+
+            cur.execute(
+                "SELECT value FROM comment_votes WHERE comment_id = %s AND user_id = %s",
+                (comment_id, user_id),
+            )
+            previous = cur.fetchone()
+            previous_value = previous[0] if previous else None
+
             cur.execute(
                 """
                 INSERT INTO comment_votes (comment_id, user_id, value)
@@ -213,6 +223,22 @@ def vote_comment(comment_id: int, req: VoteRequest, request: Request):
                 (comment_id, user_id, req.value),
             )
         conn.commit()
+
+    # Best-effort: notify on a genuine new like only — not a re-click
+    # of an already-active like, never on dislikes, never naming the
+    # liker (unlike reply notifications, which do name the replier).
+    is_new_like = req.value == 1 and previous_value != 1
+    if is_new_like and comment_author_id is not None and comment_author_id != user_id:
+        try:
+            notify.create_notification(
+                comment_author_id,
+                "New like",
+                "Your comment received a like.",
+                link=f"/problems/{comment_slug}?tab=discussion",
+            )
+        except Exception as exc:  # noqa: BLE001
+            print(f"Failed to create like notification for user {comment_author_id}: {exc}", file=sys.stderr)
+
     return {"ok": True}
 
 
