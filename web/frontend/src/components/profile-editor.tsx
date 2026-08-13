@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { forwardRef, useImperativeHandle, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,13 +11,27 @@ import { updateProfile, uploadAvatar } from "@/lib/account";
 const MAX_AVATAR_BYTES = 8 * 1024 * 1024;
 const ACCEPTED_AVATAR_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
-export function ProfileEditor({
-  user,
-  onUserChange,
-}: {
-  user: AuthUser;
-  onUserChange: (user: AuthUser) => void;
-}) {
+export type ProfileEditorHandle = {
+  // Whether the name field currently holds an unsaved, non-empty
+  // value that differs from what's already on the account — lets a
+  // caller (the welcome page) decide whether "Continue" needs to save
+  // anything at all before navigating away.
+  hasNameDraft: () => boolean;
+  saveName: () => Promise<void>;
+};
+
+export const ProfileEditor = forwardRef<
+  ProfileEditorHandle,
+  {
+    user: AuthUser;
+    onUserChange: (user: AuthUser) => void;
+    // Settings keeps its own explicit Save button (the expected,
+    // deliberate-action pattern for an account settings page). The
+    // welcome page hides it and drives saving itself via the ref, so
+    // "Continue" can apply a typed name without a separate click.
+    showSaveButton?: boolean;
+  }
+>(function ProfileEditor({ user, onUserChange, showSaveButton = true }, ref) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { add: addToast } = useToastManager();
   const [displayName, setDisplayName] = useState(user.display_name ?? "");
@@ -25,8 +39,7 @@ export function ProfileEditor({
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleSaveName(e: FormEvent) {
-    e.preventDefault();
+  async function saveName() {
     const name = displayName.trim();
     if (!name) return;
     setSaving(true);
@@ -38,9 +51,23 @@ export function ProfileEditor({
       addToast({ title: "Display name saved" });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't save — try again.");
+      throw err;
     } finally {
       setSaving(false);
     }
+  }
+
+  useImperativeHandle(ref, () => ({
+    hasNameDraft: () => {
+      const trimmed = displayName.trim();
+      return trimmed !== "" && trimmed !== (user.display_name ?? "").trim();
+    },
+    saveName,
+  }));
+
+  async function handleSaveName(e: FormEvent) {
+    e.preventDefault();
+    await saveName().catch(() => {});
   }
 
   function handlePickFile() {
@@ -147,13 +174,15 @@ export function ProfileEditor({
             maxLength={100}
             required
           />
-          <Button type="submit" disabled={saving || !displayName.trim()}>
-            {saving ? "Saving…" : "Save"}
-          </Button>
+          {showSaveButton && (
+            <Button type="submit" disabled={saving || !displayName.trim()}>
+              {saving ? "Saving…" : "Save"}
+            </Button>
+          )}
         </div>
       </form>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
     </div>
   );
-}
+});
