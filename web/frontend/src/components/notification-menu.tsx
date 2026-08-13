@@ -41,22 +41,29 @@ export function NotificationMenu() {
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  // Signed out: a direct link, not a dropdown — /notifications itself
-  // renders the "sign in to see notifications" state (see
-  // (account)/layout.tsx's PUBLIC_ACCOUNT_ROUTES and
-  // (account)/notifications/page.tsx).
+  // Signed out: same dropdown shell as signed in, just a "sign in"
+  // prompt instead of content — no redirect on click. (Wrapped in
+  // DropdownMenuGroup, not a bare DropdownMenuLabel — that throws
+  // without a Menu.Group ancestor, see the comment further down where
+  // this exact crash was first caught.)
   if (!user) {
     return (
-      <Button
-        variant="ghost"
-        size="icon"
-        className="size-8"
-        aria-label="Notifications"
-        render={<Link href="/notifications" />}
-        nativeButton={false}
-      >
-        <Bell className="size-4" />
-      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button variant="ghost" size="icon" className="size-8" aria-label="Notifications" />
+          }
+        >
+          <Bell className="size-4" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-72">
+          <DropdownMenuGroup>
+            <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+              Sign in to see notifications.
+            </DropdownMenuLabel>
+          </DropdownMenuGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
     );
   }
 

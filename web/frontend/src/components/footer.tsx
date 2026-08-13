@@ -3,11 +3,6 @@ import Link from "next/link";
 const SUPPORT_MAILTO = "mailto:support@bashcode.net";
 const TWITTER_URL = "https://x.com/bashcodenet";
 
-// Reddit/GitHub aren't real accounts yet — rendered as plain
-// (non-clickable) text rather than <a href="#"> placeholders, since a
-// dead link that looks clickable is worse than an honestly inert label.
-const INERT_SOCIALS = ["Reddit", "GitHub"];
-
 export function Footer() {
   const year = new Date().getFullYear();
   return (
@@ -36,11 +31,6 @@ export function Footer() {
           >
             X (Twitter)
           </a>
-          {INERT_SOCIALS.map((label) => (
-            <span key={label} className="text-muted-foreground">
-              {label}
-            </span>
-          ))}
         </div>
 
         <div className="flex flex-col gap-2">

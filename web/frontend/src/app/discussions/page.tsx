@@ -13,7 +13,7 @@ export default function DiscussionsPage() {
           <h1 className="text-2xl font-semibold">Discussions</h1>
           <p className="max-w-md text-sm text-muted-foreground">
             Recent activity across every problem&apos;s discussion thread — approaches, questions,
-            and the occasional argument about <code className="rounded bg-muted px-1 py-0.5 text-foreground">awk</code> one-liners.
+            and everything in between.
           </p>
         </div>
 

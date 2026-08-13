@@ -2,13 +2,15 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { MessageSquare, MessagesSquare, ThumbsUp, ThumbsDown } from "lucide-react";
+import { ChevronLeft, ChevronRight, MessageSquare, MessagesSquare, ThumbsUp, ThumbsDown } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { initials } from "@/lib/auth";
 import { relativeTime } from "@/lib/relative-time";
 import { fetchDiscussionsFeed, type DiscussionFeedItem } from "@/lib/comments-api";
+
+type Page = { items: DiscussionFeedItem[]; nextCursor: number | null };
 
 function FeedCard({ item, now }: { item: DiscussionFeedItem; now: number }) {
   return (
@@ -53,19 +55,22 @@ function FeedCard({ item, now }: { item: DiscussionFeedItem; now: number }) {
   );
 }
 
+// Pages are cached client-side by index (not just appended, like a
+// classic "Load more" would) so Previous never re-fetches — only
+// Next past a page not seen yet hits the network, using the keyset
+// cursor GET /discussions already returns.
 export function DiscussionsFeed() {
-  const [items, setItems] = useState<DiscussionFeedItem[]>([]);
-  const [cursor, setCursor] = useState<number | null>(null);
+  const [pages, setPages] = useState<Page[]>([]);
+  const [pageIndex, setPageIndex] = useState(0);
   const [loaded, setLoaded] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [loadingPage, setLoadingPage] = useState(false);
   const [now] = useState(() => Date.now());
 
   useEffect(() => {
     let cancelled = false;
     fetchDiscussionsFeed().then((page) => {
       if (cancelled) return;
-      setItems(page?.items ?? []);
-      setCursor(page?.next_cursor ?? null);
+      setPages([{ items: page?.items ?? [], nextCursor: page?.next_cursor ?? null }]);
       setLoaded(true);
     });
     return () => {
@@ -73,21 +78,33 @@ export function DiscussionsFeed() {
     };
   }, []);
 
-  async function handleLoadMore() {
-    if (cursor === null || loadingMore) return;
-    setLoadingMore(true);
-    try {
-      const page = await fetchDiscussionsFeed(cursor);
-      setItems((prev) => [...prev, ...(page?.items ?? [])]);
-      setCursor(page?.next_cursor ?? null);
-    } finally {
-      setLoadingMore(false);
+  async function handleNext() {
+    const current = pages[pageIndex];
+    if (!current || current.nextCursor === null) return;
+    if (pages[pageIndex + 1]) {
+      setPageIndex((i) => i + 1);
+      return;
     }
+    setLoadingPage(true);
+    try {
+      const page = await fetchDiscussionsFeed(current.nextCursor);
+      setPages((prev) => [...prev, { items: page?.items ?? [], nextCursor: page?.next_cursor ?? null }]);
+      setPageIndex((i) => i + 1);
+    } finally {
+      setLoadingPage(false);
+    }
+  }
+
+  function handlePrevious() {
+    setPageIndex((i) => Math.max(0, i - 1));
   }
 
   if (!loaded) return null;
 
-  if (items.length === 0) {
+  const current = pages[pageIndex];
+  const items = current?.items ?? [];
+
+  if (pageIndex === 0 && items.length === 0) {
     return (
       <div className="flex flex-col items-center gap-3 py-12 text-center">
         <MessagesSquare className="size-8 text-muted-foreground/30" />
@@ -101,6 +118,9 @@ export function DiscussionsFeed() {
     );
   }
 
+  const hasNext = current?.nextCursor !== null;
+  const hasPrevious = pageIndex > 0;
+
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -108,15 +128,20 @@ export function DiscussionsFeed() {
           <FeedCard key={item.id} item={item} now={now} />
         ))}
       </div>
-      {cursor !== null && (
-        <Button
-          variant="outline"
-          onClick={handleLoadMore}
-          disabled={loadingMore}
-          className="self-center"
-        >
-          {loadingMore ? "Loading…" : "Load more"}
-        </Button>
+      {(hasPrevious || hasNext) && (
+        <div className="flex items-center justify-between gap-2 border-t pt-4">
+          <span className="text-xs text-muted-foreground">Page {pageIndex + 1}</span>
+          <div className="flex items-center gap-1">
+            <Button variant="outline" size="sm" disabled={!hasPrevious} onClick={handlePrevious}>
+              <ChevronLeft className="size-4" />
+              Prev
+            </Button>
+            <Button variant="outline" size="sm" disabled={!hasNext || loadingPage} onClick={handleNext}>
+              {loadingPage ? "Loading…" : "Next"}
+              <ChevronRight className="size-4" />
+            </Button>
+          </div>
+        </div>
       )}
     </div>
   );
