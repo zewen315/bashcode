@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,12 +11,15 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuLinkItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/lib/auth-context";
 import { listNotifications, markRead, markAllRead, type Notification } from "@/lib/notifications";
 import { relativeTime } from "@/lib/relative-time";
+
+const WIDGET_LIMIT = 5;
 
 export function NotificationMenu() {
   const { user } = useAuth();
@@ -79,7 +83,7 @@ export function NotificationMenu() {
         ) : (
           <>
             <DropdownMenuGroup>
-              {visibleNotifications.map((n) => (
+              {visibleNotifications.slice(0, WIDGET_LIMIT).map((n) => (
                 <DropdownMenuItem
                   key={n.id}
                   onClick={() => !n.read && handleMarkRead(n.id)}
@@ -97,13 +101,14 @@ export function NotificationMenu() {
               ))}
             </DropdownMenuGroup>
             {unreadCount > 0 && (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleMarkAllRead} className="justify-center text-xs">
-                  Mark all as read
-                </DropdownMenuItem>
-              </>
+              <DropdownMenuItem onClick={handleMarkAllRead} className="justify-center text-xs">
+                Mark all as read
+              </DropdownMenuItem>
             )}
+            <DropdownMenuSeparator />
+            <DropdownMenuLinkItem render={<Link href="/notifications" />} className="justify-center text-xs">
+              View all notifications
+            </DropdownMenuLinkItem>
           </>
         )}
       </DropdownMenuContent>

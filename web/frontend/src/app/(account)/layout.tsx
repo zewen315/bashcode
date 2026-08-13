@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import { User, Settings } from "lucide-react";
+import { User, Activity, Bell, Settings } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Footer } from "@/components/footer";
 import { useAuth } from "@/lib/auth-context";
@@ -12,6 +12,8 @@ import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
   { href: "/profile", label: "Profile", icon: User },
+  { href: "/activity", label: "Activity", icon: Activity },
+  { href: "/notifications", label: "Notifications", icon: Bell },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
