@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CircleUserRound, User, Settings, LogOut } from "lucide-react";
+import { CircleUserRound, User, Activity, Bell, Settings, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { GitHubIcon, GoogleIcon } from "@/components/icons";
@@ -84,6 +84,14 @@ export function ProfileMenu() {
             <DropdownMenuLinkItem render={<Link href="/profile" />}>
               <User className="size-4" />
               Profile
+            </DropdownMenuLinkItem>
+            <DropdownMenuLinkItem render={<Link href="/activity" />}>
+              <Activity className="size-4" />
+              Activity
+            </DropdownMenuLinkItem>
+            <DropdownMenuLinkItem render={<Link href="/notifications" />}>
+              <Bell className="size-4" />
+              Notifications
             </DropdownMenuLinkItem>
             <DropdownMenuLinkItem render={<Link href="/settings" />}>
               <Settings className="size-4" />

@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useProgress } from "@/lib/progress-context";
 import { cn } from "@/lib/utils";
 
@@ -11,13 +13,24 @@ function dateKey(year: number, month: number, day: number): string {
 
 export function MiniCalendar({ today }: { today: Date }) {
   const { activeDates, finishedLast3, finishedLast7, loaded } = useProgress();
+  // Viewed month is independent of "today" — navigating away from the
+  // current month must not change which cell (if any) gets the "today"
+  // treatment, only which month's days are laid out.
+  const [viewed, setViewed] = useState({ year: today.getFullYear(), month: today.getMonth() });
   if (!loaded) return null;
 
-  const year = today.getFullYear();
-  const month = today.getMonth();
-  const monthName = today.toLocaleString("en-US", { month: "long" });
+  const { year, month } = viewed;
+  const monthName = new Date(year, month, 1).toLocaleString("en-US", { month: "long" });
   const firstWeekday = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const isCurrentMonth = year === today.getFullYear() && month === today.getMonth();
+
+  function goToMonth(delta: number) {
+    setViewed(({ year, month }) => {
+      const d = new Date(year, month + delta, 1);
+      return { year: d.getFullYear(), month: d.getMonth() };
+    });
+  }
 
   const cells: (number | null)[] = [
     ...Array(firstWeekday).fill(null),
@@ -26,9 +39,29 @@ export function MiniCalendar({ today }: { today: Date }) {
 
   return (
     <div>
-      <p className="mb-2 text-sm font-medium">
-        {monthName} {year}
-      </p>
+      <div className="mb-2 flex items-center justify-between">
+        <p className="text-sm font-medium">
+          {monthName} {year}
+        </p>
+        <div className="flex items-center gap-0.5">
+          <button
+            type="button"
+            onClick={() => goToMonth(-1)}
+            aria-label="Previous month"
+            className="flex size-5 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <ChevronLeft className="size-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => goToMonth(1)}
+            aria-label="Next month"
+            className="flex size-5 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <ChevronRight className="size-3.5" />
+          </button>
+        </div>
+      </div>
       <div className="grid grid-cols-7 gap-y-1 text-center text-xs">
         {WEEKDAYS.map((d, i) => (
           <span key={i} className="text-muted-foreground">
@@ -36,7 +69,7 @@ export function MiniCalendar({ today }: { today: Date }) {
           </span>
         ))}
         {cells.map((day, i) => {
-          const isToday = day === today.getDate();
+          const isToday = isCurrentMonth && day === today.getDate();
           const isActive = day !== null && activeDates.has(dateKey(year, month, day));
           return (
             <span
