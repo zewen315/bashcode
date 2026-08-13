@@ -2,12 +2,8 @@ import Link from "next/link";
 import { TerminalSquare } from "lucide-react";
 import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
-import { listProblems } from "@/lib/api";
 
-export default async function AboutPage() {
-  const problems = await listProblems();
-  const hasHard = problems.some((p) => p.difficulty === "hard");
-
+export default function AboutPage() {
   return (
     <>
       <main className="mx-auto max-w-2xl px-6 py-16">
@@ -17,7 +13,7 @@ export default async function AboutPage() {
           </div>
           <h1 className="text-2xl font-semibold">About BashCode</h1>
           <p className="max-w-md text-sm text-muted-foreground">
-            A LeetCode-style practice platform for Bash scripting — real shell
+            A hands-on practice platform for Bash scripting — real shell
             problems, judged on what your script actually does.
           </p>
         </div>
@@ -25,11 +21,8 @@ export default async function AboutPage() {
         <div className="flex flex-col gap-6 text-sm leading-6 text-muted-foreground">
           <p>
             Problems are multi-step and practical — log analysis, file batch
-            operations, config processing — not single-command drills. Right
-            now that&apos;s{" "}
-            <span className="font-medium text-foreground">{problems.length} problems</span>
-            {hasHard ? "" : " (Easy and Medium so far — Hard is next)"}, with more
-            shipping regularly.
+            operations, config processing — not single-command drills. New
+            problems are shipping regularly, with harder ones on the way.
           </p>
           <p>
             Every submission runs in a disposable, locked-down Docker sandbox

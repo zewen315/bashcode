@@ -39,10 +39,26 @@ export function NotificationMenu() {
     };
   }, [user]);
 
-  // Signed out but state still holds a previous fetch (e.g. right
-  // after the user just signed out) — never display stale data.
-  const visibleNotifications = user ? notifications : [];
-  const unreadCount = visibleNotifications.filter((n) => !n.read).length;
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  // Signed out: a direct link, not a dropdown — /notifications itself
+  // renders the "sign in to see notifications" state (see
+  // (account)/layout.tsx's PUBLIC_ACCOUNT_ROUTES and
+  // (account)/notifications/page.tsx).
+  if (!user) {
+    return (
+      <Button
+        variant="ghost"
+        size="icon"
+        className="size-8"
+        aria-label="Notifications"
+        render={<Link href="/notifications" />}
+        nativeButton={false}
+      >
+        <Bell className="size-4" />
+      </Button>
+    );
+  }
 
   async function handleMarkRead(id: number) {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
@@ -72,47 +88,39 @@ export function NotificationMenu() {
         )}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-72">
-        {!user ? (
+        {notifications.length === 0 ? (
           <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-            Sign in to see notifications.
+            No notifications yet.
           </DropdownMenuLabel>
         ) : (
-          <>
-            {visibleNotifications.length === 0 ? (
-              <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-                No notifications yet.
-              </DropdownMenuLabel>
-            ) : (
-              <DropdownMenuGroup>
-                {visibleNotifications.slice(0, WIDGET_LIMIT).map((n) => (
-                  <DropdownMenuItem
-                    key={n.id}
-                    onClick={() => !n.read && handleMarkRead(n.id)}
-                    className="flex-col items-start gap-0.5 whitespace-normal"
-                  >
-                    <div className="flex w-full items-center gap-1.5">
-                      {!n.read && <span className="size-1.5 shrink-0 rounded-full bg-primary" />}
-                      <span className="font-medium">{n.title}</span>
-                      <span className="ml-auto shrink-0 text-xs text-muted-foreground">
-                        {relativeTime(new Date(n.created_at).getTime(), now)}
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">{n.body}</p>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuGroup>
-            )}
-            {unreadCount > 0 && (
-              <DropdownMenuItem onClick={handleMarkAllRead} className="justify-center text-xs">
-                Mark all as read
+          <DropdownMenuGroup>
+            {notifications.slice(0, WIDGET_LIMIT).map((n) => (
+              <DropdownMenuItem
+                key={n.id}
+                onClick={() => !n.read && handleMarkRead(n.id)}
+                className="flex-col items-start gap-0.5 whitespace-normal"
+              >
+                <div className="flex w-full items-center gap-1.5">
+                  {!n.read && <span className="size-1.5 shrink-0 rounded-full bg-primary" />}
+                  <span className="font-medium">{n.title}</span>
+                  <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+                    {relativeTime(new Date(n.created_at).getTime(), now)}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground">{n.body}</p>
               </DropdownMenuItem>
-            )}
-            <DropdownMenuSeparator />
-            <DropdownMenuLinkItem render={<Link href="/notifications" />} className="justify-center text-xs">
-              View all notifications
-            </DropdownMenuLinkItem>
-          </>
+            ))}
+          </DropdownMenuGroup>
         )}
+        {unreadCount > 0 && (
+          <DropdownMenuItem onClick={handleMarkAllRead} className="justify-center text-xs">
+            Mark all as read
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuSeparator />
+        <DropdownMenuLinkItem render={<Link href="/notifications" />} className="justify-center text-xs">
+          View all notifications
+        </DropdownMenuLinkItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

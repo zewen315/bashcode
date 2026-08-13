@@ -24,9 +24,18 @@ export default function NotificationsPage() {
     };
   }, [user]);
 
-  // AccountLayout (app/(account)/layout.tsx) already guards against a
-  // signed-out visitor and redirects before this ever renders.
-  if (!user) return null;
+  // /notifications is exempt from AccountLayout's redirect-away guard
+  // (see PUBLIC_ACCOUNT_ROUTES in app/(account)/layout.tsx) — a
+  // signed-out visitor lands here and sees this, not a bounce to
+  // /problems.
+  if (!user) {
+    return (
+      <>
+        <h1 className="mb-6 text-2xl font-semibold">Notifications</h1>
+        <p className="text-sm text-muted-foreground">Sign in to see your notifications.</p>
+      </>
+    );
+  }
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 

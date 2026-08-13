@@ -38,22 +38,35 @@ def _problem_title(slug: str) -> str | None:
     return yaml.safe_load(config_path.read_text()).get("title")
 
 
+def _author_dict(user_row_id, display_name, avatar_url, public_id) -> dict:
+    """user_row_id is NULL when the comment's author account has been
+    deleted (comments.user_id is ON DELETE SET NULL, not CASCADE, so
+    the comment itself survives) — synthesize a "deleted user" author
+    rather than dropping the comment or leaking a null name. Checked
+    against the joined user row's id, not display_name's own
+    truthiness, since a real user could in principle have a blank name.
+    """
+    if user_row_id is None:
+        return {"display_name": "deleted user", "avatar_url": None, "public_id": None}
+    return {"display_name": display_name, "avatar_url": avatar_url, "public_id": public_id}
+
+
 def _fetch_comments(slug: str, user_id: int | None) -> list[dict]:
     with db.pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """
                 SELECT c.id, c.parent_id, c.body, c.deleted_at, c.created_at,
-                       u.display_name, u.avatar_url, u.public_id,
+                       u.id, u.display_name, u.avatar_url, u.public_id,
                        COUNT(*) FILTER (WHERE cv.value = 1) AS upvotes,
                        COUNT(*) FILTER (WHERE cv.value = -1) AS downvotes,
                        (SELECT value FROM comment_votes
                         WHERE comment_id = c.id AND user_id = %s) AS my_vote
                 FROM comments c
-                JOIN users u ON u.id = c.user_id
+                LEFT JOIN users u ON u.id = c.user_id
                 LEFT JOIN comment_votes cv ON cv.comment_id = c.id
                 WHERE c.slug = %s
-                GROUP BY c.id, u.display_name, u.avatar_url, u.public_id
+                GROUP BY c.id, u.id, u.display_name, u.avatar_url, u.public_id
                 ORDER BY c.created_at ASC
                 """,
                 (user_id, slug),
@@ -63,14 +76,14 @@ def _fetch_comments(slug: str, user_id: int | None) -> list[dict]:
     by_id: dict[int, dict] = {}
     top_level: list[dict] = []
     for row in rows:
-        (cid, parent_id, body, deleted_at, created_at, display_name, avatar_url, public_id,
+        (cid, parent_id, body, deleted_at, created_at, user_row_id, display_name, avatar_url, public_id,
          upvotes, downvotes, my_vote) = row
         item = {
             "id": cid,
             "body": body,
             "deleted": deleted_at is not None,
             "created_at": int(created_at.timestamp() * 1000),
-            "author": {"display_name": display_name, "avatar_url": avatar_url, "public_id": public_id},
+            "author": _author_dict(user_row_id, display_name, avatar_url, public_id),
             "upvotes": upvotes,
             "downvotes": downvotes,
             "my_vote": my_vote,
@@ -205,16 +218,16 @@ def discussions_feed(request: Request, before: int | None = None):
             cur.execute(
                 """
                 SELECT c.id, c.slug, c.body, c.created_at,
-                       u.display_name, u.avatar_url, u.public_id,
+                       u.id, u.display_name, u.avatar_url, u.public_id,
                        COUNT(*) FILTER (WHERE cv.value = 1) AS upvotes,
                        COUNT(*) FILTER (WHERE cv.value = -1) AS downvotes,
                        (SELECT COUNT(*) FROM comments r WHERE r.parent_id = c.id) AS reply_count
                 FROM comments c
-                JOIN users u ON u.id = c.user_id
+                LEFT JOIN users u ON u.id = c.user_id
                 LEFT JOIN comment_votes cv ON cv.comment_id = c.id
                 WHERE c.parent_id IS NULL AND c.deleted_at IS NULL
                   AND (%s::bigint IS NULL OR c.id < %s)
-                GROUP BY c.id, u.display_name, u.avatar_url, u.public_id
+                GROUP BY c.id, u.id, u.display_name, u.avatar_url, u.public_id
                 ORDER BY c.id DESC
                 LIMIT %s
                 """,
@@ -224,7 +237,8 @@ def discussions_feed(request: Request, before: int | None = None):
 
     items = []
     for row in rows:
-        cid, slug, body, created_at, display_name, avatar_url, public_id, upvotes, downvotes, reply_count = row
+        (cid, slug, body, created_at, user_row_id, display_name, avatar_url, public_id,
+         upvotes, downvotes, reply_count) = row
         excerpt = body if len(body) <= 200 else body[:200] + "…"
         items.append({
             "id": cid,
@@ -232,7 +246,7 @@ def discussions_feed(request: Request, before: int | None = None):
             "problem_title": _problem_title(slug),
             "excerpt": excerpt,
             "created_at": int(created_at.timestamp() * 1000),
-            "author": {"display_name": display_name, "avatar_url": avatar_url, "public_id": public_id},
+            "author": _author_dict(user_row_id, display_name, avatar_url, public_id),
             "upvotes": upvotes,
             "downvotes": downvotes,
             "reply_count": reply_count,

@@ -1,7 +1,12 @@
 export type CommentAuthor = {
   display_name: string | null;
   avatar_url: string | null;
-  public_id: string;
+  // null when the author's account has since been deleted — the
+  // comment survives (see docs/decisions/0013), just its author link
+  // doesn't. A null public_id can never match a signed-in user's own,
+  // so ownership checks (delete button, etc.) correctly never treat a
+  // deleted user's old comment as belonging to anyone.
+  public_id: string | null;
 };
 
 export type Comment = {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { MessageSquare } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { CommentComposer } from "@/components/comment-composer";
 import { CommentItem } from "@/components/comment-item";
@@ -106,7 +107,12 @@ export function DiscussionThread({ slug }: { slug: string }) {
         <p className="text-sm text-muted-foreground">Sign in to join the discussion.</p>
       )}
       {comments.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No comments yet — be the first.</p>
+        <div className="flex flex-col items-center gap-2 py-8 text-center">
+          <MessageSquare className="size-6 text-muted-foreground/30" />
+          <p className="text-sm text-muted-foreground">
+            No comments yet — be the first to ask a question or share your approach.
+          </p>
+        </div>
       ) : (
         <div className="flex flex-col gap-5">
           {comments.map((comment) => (

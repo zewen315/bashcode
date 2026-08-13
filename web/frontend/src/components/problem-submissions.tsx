@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, XCircle, Clock, ChevronDown, ChevronRight } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, ChevronDown, ChevronRight, Inbox } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth-context";
 import { useProgress } from "@/lib/progress-context";
@@ -177,9 +177,12 @@ export function ProblemSubmissions({
       {liveResult && <SubmissionResult result={submitResultToData(liveResult)} />}
 
       {entries.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No submissions yet for this problem — Submit a solution to see it here.
-        </p>
+        <div className="flex flex-col items-center gap-2 py-8 text-center">
+          <Inbox className="size-6 text-muted-foreground/30" />
+          <p className="text-sm text-muted-foreground">
+            No submissions yet — Submit a solution to see your results here.
+          </p>
+        </div>
       ) : (
         <div className="flex flex-col gap-2">
           {entries.map((entry, i) => (

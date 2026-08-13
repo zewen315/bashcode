@@ -20,7 +20,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "BashCode",
-  description: "LeetCode-style Bash and Linux challenges for SRE and DevOps engineers.",
+  description: "Hands-on Bash and Linux practice problems for SRE and DevOps engineers.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

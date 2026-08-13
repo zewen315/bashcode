@@ -17,34 +17,46 @@ const NAV_ITEMS = [
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
+// /notifications is the one account page that should stay reachable
+// (with a graceful empty view) when signed out, rather than bouncing
+// to /problems before anything renders — see
+// docs/decisions/0013-comment-author-deletion-and-ux-polish.md.
+const PUBLIC_ACCOUNT_ROUTES = ["/notifications"];
+
 export default function AccountLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, loading } = useAuth();
+  const isPublicRoute = PUBLIC_ACCOUNT_ROUTES.includes(pathname);
 
   useEffect(() => {
-    if (!loading && !user) router.replace("/problems");
-  }, [loading, user, router]);
+    if (!loading && !user && !isPublicRoute) router.replace("/problems");
+  }, [loading, user, isPublicRoute, router]);
 
-  if (loading || !user) return null;
+  if (loading) return null;
+  if (!user && !isPublicRoute) return null;
 
   return (
     <>
       <main className="mx-auto flex w-full max-w-4xl flex-col gap-10 px-6 py-16 sm:flex-row">
         <aside className="flex shrink-0 flex-col gap-6 sm:w-56">
-          <div className="flex flex-col items-center gap-2 text-center">
-            <Avatar size="lg">
-              <AvatarImage src={user.avatar_url ?? undefined} />
-              <AvatarFallback className="bg-primary text-primary-foreground text-lg">
-                {initials(user.display_name)}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <div className="font-medium">{user.display_name ?? "you"}</div>
-              <div className="text-xs text-muted-foreground">@{user.public_id}</div>
-              <div className="text-xs text-muted-foreground">Signed in with {providerLabel(user.provider)}</div>
+          {user ? (
+            <div className="flex flex-col items-center gap-2 text-center">
+              <Avatar size="lg">
+                <AvatarImage src={user.avatar_url ?? undefined} />
+                <AvatarFallback className="bg-primary text-primary-foreground text-lg">
+                  {initials(user.display_name)}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <div className="font-medium">{user.display_name ?? "you"}</div>
+                <div className="text-xs text-muted-foreground">@{user.public_id}</div>
+                <div className="text-xs text-muted-foreground">Signed in with {providerLabel(user.provider)}</div>
+              </div>
             </div>
-          </div>
+          ) : (
+            <p className="text-center text-sm text-muted-foreground">Sign in to see your account.</p>
+          )}
           <nav className="flex flex-row gap-1 sm:flex-col">
             {NAV_ITEMS.map(({ href, label, icon: Icon }) => (
               <Link
