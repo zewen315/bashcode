@@ -1,7 +1,7 @@
-# BashCode — Project Spec for Coding Agent
+# BashCode — Project Guide for Coding Agents
 
 ## What this is
-LeetCode-style practice platform for Bash scripting, at bashcode.net.
+A hands-on practice platform for Bash scripting, at bashcode.net.
 Problems are multi-step/practical, not single-command drills. Judge
 evaluates output/behavior, NOT which commands were used — multiple
 correct solutions must pass.
@@ -9,23 +9,26 @@ correct solutions must pass.
 ## Non-negotiable principles
 - Judge results, never required commands or command-name matching.
 - Every submission is untrusted/potentially malicious code. No exceptions.
-- Keep V1 boring and simple. No microservices, Kubernetes, Kafka.
-- Don't build auth, monetization, or SRE/K8s features until core
-  problem-solving loop works end to end.
+- Keep it boring and simple. No microservices, Kubernetes, Kafka.
+- Anything non-trivial gets a decision doc in `docs/decisions/` — see
+  "Decision log" below. Read the relevant ones before touching a
+  feature; don't rely on this file for that kind of detail.
 
 ## Stack
-- Frontend: Next.js + TypeScript + Tailwind + shadcn/ui + Monaco Editor
-- Backend: FastAPI
-- DB: PostgreSQL
-- Queue: Redis (add only when concurrency needs it, not before)
-- Judge: Python + Docker (MVP-level isolation only)
-- Deploy: Docker Compose on a DigitalOcean Droplet (1GB acceptable for V1)
+- Frontend: Next.js (App Router) + TypeScript + Tailwind + Base UI
+  primitives + Monaco Editor
+- Backend: FastAPI (sync, no asyncio)
+- DB: PostgreSQL, schema-migrated via `db/migrations/*.sql` (applied
+  automatically on backend startup, see `db.py`'s `run_migrations()`)
+- Judge: Python + Docker (MVP-level isolation only), run synchronously
+  — no queue; only add one if concurrency actually demands it
+- Deploy: Docker Compose on a DigitalOcean Droplet, behind Caddy
 - DNS/CDN: Cloudflare
 
 ## Architecture
 ```
 Next.js → FastAPI → PostgreSQL
-Submission → Queue → Judge Worker → disposable Docker sandbox
+Submission → Judge (Python) → disposable Docker sandbox
 ```
 
 ## Judge sandbox requirements (hard requirements, not optional)
@@ -46,7 +49,9 @@ evaluate gVisor/Firecracker.
 ## Repo layout (split across two repos)
 `bashcode` is **public** (app code, no problem content ever lands here).
 `bashcode-problems` is **private** (test cases + solutions must never be
-public, or submissions become answer lookups).
+public, or submissions become answer lookups) — pulled onto the droplet
+via a read-only SSH deploy key, `git pull`'d alongside this repo on
+every deploy.
 
 ```
 bashcode/                  (public)
@@ -54,6 +59,8 @@ bashcode/                  (public)
 │   ├── frontend/
 │   └── backend/
 ├── judge/
+├── db/migrations/          sequential schema migrations, applied on startup
+├── docs/decisions/         ADR-style log — why each feature exists, not just what shipped
 ├── infra/
 └── docker-compose.yml
 
@@ -62,37 +69,59 @@ bashcode-problems/          (private)
     ├── problem.md
     ├── config.yaml
     ├── starter.sh
-    ├── tests/
-    └── solution.sh
+    ├── solution.sh
+    ├── solution.md
+    └── tests/
 ```
 
-`bashcode-problems` is pulled into the judge/ingest environment at
-build or deploy time (git submodule pinned to a commit, or a
-deploy-time clone with a scoped read-only credential) — never bundled
-into the public repo or exposed through any API response.
+## Decision log
+`docs/decisions/0001...` onward is the durable record of *why* each
+feature exists — schema rationale, design tradeoffs, what was
+deliberately left out of scope, and how each change was verified
+against the real running system. Plan-mode files under `~/.claude/plans/`
+are ephemeral and get overwritten every session; this log is not —
+it's the actual source of truth for "why does this work this way."
 
-## Core user flow (build this first, nothing else)
+## Core user flow
 ```
 /problems → /problems/[slug] → write Bash in Monaco
 → Run (visible tests) → Submit (hidden tests in sandbox)
-→ Accepted / Wrong Answer / Runtime Error / Timeout
+→ Accepted / Wrong Answer / Timeout / No Tests Found
 ```
+
+## What's shipped beyond the core loop
+- Accounts (Google/GitHub OAuth), profiles, avatars
+- Progress tracking (submissions, starred problems, activity calendar)
+  — Postgres-backed when signed in, localStorage when anonymous, with
+  merge-on-login
+- Per-problem discussions: markdown comments, single-level replies,
+  likes, deletion (both self-delete and account-deletion-safe — a
+  deleted user's comments survive as "deleted user")
+- An aggregated `/discussions` feed and a real cross-user leaderboard
+- Notifications: replies, likes, a welcome message on signup, and
+  global announcements — merged into one bell/inbox, paginated,
+  removable
+- Historical submission detail (first failing test, plus the code you
+  actually submitted)
+- A "Buy Me a Coffee" support page — an external link only, no payment
+  processing lives in this app
 
 ## V1 problem categories
 Bash fundamentals · text processing (grep/sed/awk/cut/sort/uniq) ·
 files (find/permissions/timestamps/batch ops) · pipes & redirects/xargs ·
 practical scripts (log analysis, cleanup, reports, backups, config
-processing). Target: "BashCode 50" curated set.
+processing).
 
-## Explicitly out of scope for V1
-Auth/accounts, payments, Kubernetes labs, SRE troubleshooting sims,
-production simulations, AI tutor features, microservices.
+## Explicitly out of scope (for now)
+Kubernetes labs, SRE troubleshooting sims, production simulations, AI
+tutor features, microservices, an admin UI for posting announcements
+(still a manual `psql` INSERT by design), custom/in-app payment
+processing.
 
 ## Target users
 SRE/production/DevOps/platform/backend-linux engineers; people
 interview-prepping for Bash/Linux/SRE roles.
 
-## Success metric (only one that matters right now)
-100 unrelated users actually submit a problem. Track:
-visit → run → submit → solve → solve again → return.
-Retention over pageviews. Do not optimize monetization yet.
+## Success metric
+Visit → run → submit → solve → solve again → return. Retention over
+pageviews.
