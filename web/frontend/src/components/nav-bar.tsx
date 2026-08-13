@@ -7,6 +7,8 @@ import { NotificationMenu } from "@/components/notification-menu";
 import { ProfileMenu } from "@/components/profile-menu";
 import { NavLinks } from "@/components/nav-links";
 
+const COFFEE_URL = "https://buymeacoffee.com/bashcode";
+
 export function NavBar() {
   return (
     <header className="flex h-12 shrink-0 items-center justify-between border-b bg-card px-2 sm:px-4">
@@ -37,7 +39,7 @@ export function NavBar() {
           <MessageSquarePlus className="size-4" />
         </Button>
         <Button
-          render={<Link href="/donate" />}
+          render={<a href={COFFEE_URL} target="_blank" rel="noopener noreferrer" />}
           nativeButton={false}
           size="sm"
           variant="outline"
