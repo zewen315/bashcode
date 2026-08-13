@@ -39,7 +39,12 @@ export function NotificationMenu() {
     };
   }, [user]);
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  // The dropdown preview only ever shows unread notifications — once
+  // one's read (or removed on the full /notifications page) it drops
+  // out of view here automatically, since this is recomputed fresh
+  // from `notifications` on every render. Read history still lives on
+  // the full page via "View all notifications" below.
+  const unread = notifications.filter((n) => !n.read);
 
   // Signed out: same dropdown shell as signed in, just a "sign in"
   // prompt instead of content — no redirect on click. (Wrapped in
@@ -85,17 +90,17 @@ export function NotificationMenu() {
         }
       >
         <Bell className="size-4" />
-        {unreadCount > 0 && (
+        {unread.length > 0 && (
           <Badge
             variant="destructive"
             className="absolute -top-1 -right-1 h-4 min-w-4 justify-center rounded-full px-1 text-[10px]"
           >
-            {unreadCount > 9 ? "9+" : unreadCount}
+            {unread.length > 9 ? "9+" : unread.length}
           </Badge>
         )}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-72">
-        {notifications.length === 0 ? (
+        {unread.length === 0 ? (
           // DropdownMenuLabel wraps Base UI's Menu.GroupLabel, which
           // throws ("MenuGroupContext is missing") unless it has a
           // Menu.Group ancestor — a real, pre-existing crash whenever
@@ -103,12 +108,12 @@ export function NotificationMenu() {
           // exercised until now.
           <DropdownMenuGroup>
             <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-              No notifications yet.
+              You&apos;re all caught up.
             </DropdownMenuLabel>
           </DropdownMenuGroup>
         ) : (
           <DropdownMenuGroup>
-            {notifications.slice(0, WIDGET_LIMIT).map((n) => {
+            {unread.slice(0, WIDGET_LIMIT).map((n) => {
               const content = (
                 <>
                   <div className="flex w-full items-center gap-1.5">
@@ -143,7 +148,7 @@ export function NotificationMenu() {
             })}
           </DropdownMenuGroup>
         )}
-        {unreadCount > 0 && (
+        {unread.length > 0 && (
           <DropdownMenuItem onClick={handleMarkAllRead} className="justify-center text-xs">
             Mark all as read
           </DropdownMenuItem>
