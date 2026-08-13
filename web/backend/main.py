@@ -14,6 +14,7 @@ import yaml
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, StringConstraints
+from psycopg.types.json import Json
 
 import account
 import auth
@@ -266,6 +267,38 @@ def get_problem(slug: str):
     }
 
 
+DETAIL_TEXT_MAX_LENGTH = 4000
+
+
+def _truncate(text: str) -> str:
+    if len(text) <= DETAIL_TEXT_MAX_LENGTH:
+        return text
+    return text[:DETAIL_TEXT_MAX_LENGTH] + "… (truncated)"
+
+
+def _submission_details(result: dict) -> dict:
+    """Reduced, boundedly-sized record of a judge result — mirrors
+    exactly what LiveResult already shows live (first failing test
+    only, never the full per-test array, which can be arbitrarily
+    large). Persisted so a past submission's outcome can be inspected
+    later, not just at the moment it was made.
+    """
+    first_failure = next((t for t in result["tests"] if not t["passed"]), None)
+    return {
+        "elapsed_seconds": result["elapsed_seconds"],
+        "total_tests": len(result["tests"]),
+        "first_failure": (
+            {
+                "name": first_failure["name"],
+                "expected": _truncate(first_failure["expected"]),
+                "actual": _truncate(first_failure["actual"]),
+            }
+            if first_failure
+            else None
+        ),
+    }
+
+
 @app.post("/submit")
 def submit(req: SubmitRequest, request: Request):
     check_rate_limit(request)
@@ -289,8 +322,11 @@ def submit(req: SubmitRequest, request: Request):
             with db.pool.connection() as conn:
                 with conn.cursor() as cur:
                     cur.execute(
-                        "INSERT INTO submissions (user_id, slug, verdict) VALUES (%s, %s, %s)",
-                        (user_id, req.slug, result["verdict"]),
+                        """
+                        INSERT INTO submissions (user_id, slug, verdict, details)
+                        VALUES (%s, %s, %s, %s)
+                        """,
+                        (user_id, req.slug, result["verdict"], Json(_submission_details(result))),
                     )
         except Exception as exc:  # noqa: BLE001
             print(f"Failed to record submission for user {user_id}: {exc}", file=sys.stderr)

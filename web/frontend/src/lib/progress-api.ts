@@ -1,4 +1,13 @@
 import type { ActivityEntry } from "@/lib/local-progress";
+import type { SubmissionResultData } from "@/lib/api";
+
+export type SubmissionDetail = {
+  slug: string;
+  verdict: SubmissionResultData["verdict"];
+  submitted_at: number;
+  // null for submissions made before the details column existed.
+  details: Omit<SubmissionResultData, "verdict"> | null;
+};
 
 export type ProgressData = {
   solved: string[];
@@ -25,6 +34,12 @@ export async function fetchProgress(): Promise<ProgressData | null> {
 
 export async function fetchLeaderboard(): Promise<LeaderboardData | null> {
   const res = await fetch("/api/progress/leaderboard", { cache: "no-store" });
+  if (!res.ok) return null;
+  return res.json();
+}
+
+export async function fetchSubmissionDetail(id: number): Promise<SubmissionDetail | null> {
+  const res = await fetch(`/api/progress/submissions/${id}`, { cache: "no-store" });
   if (!res.ok) return null;
   return res.json();
 }

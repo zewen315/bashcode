@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
 import db
@@ -38,13 +38,13 @@ def get_progress(request: Request):
 
             cur.execute(
                 """
-                SELECT slug, verdict, submitted_at FROM submissions
+                SELECT id, slug, verdict, submitted_at FROM submissions
                 WHERE user_id = %s ORDER BY submitted_at DESC LIMIT %s
                 """,
                 (user_id, ACTIVITY_LIMIT),
             )
             activity = [
-                {"slug": row[0], "verdict": row[1], "at": int(row[2].timestamp() * 1000)}
+                {"id": row[0], "slug": row[1], "verdict": row[2], "at": int(row[3].timestamp() * 1000)}
                 for row in cur.fetchall()
             ]
 
@@ -88,6 +88,30 @@ def get_progress(request: Request):
         "active_dates": active_dates,
         "finished_last_3_days": finished_last_3_days,
         "finished_last_7_days": finished_last_7_days,
+    }
+
+
+@router.get("/submissions/{submission_id}")
+def get_submission_detail(submission_id: int, request: Request):
+    user_id = require_user_id(request)
+    with db.pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT slug, verdict, submitted_at, details FROM submissions
+                WHERE id = %s AND user_id = %s
+                """,
+                (submission_id, user_id),
+            )
+            row = cur.fetchone()
+    if row is None:
+        raise HTTPException(status_code=404, detail="submission not found")
+    slug, verdict, submitted_at, details = row
+    return {
+        "slug": slug,
+        "verdict": verdict,
+        "submitted_at": int(submitted_at.timestamp() * 1000),
+        "details": details,
     }
 
 

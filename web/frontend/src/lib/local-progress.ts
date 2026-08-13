@@ -16,6 +16,11 @@ export type ActivityEntry = {
   slug: string;
   verdict: string;
   at: number;
+  // Only ever set for signed-in (DB-backed) entries — anonymous/local
+  // submissions were never written to Postgres, so there's no
+  // submission id to fetch details for. Absence, not null, on purpose:
+  // this type is also what gets read back out of localStorage.
+  id?: number;
 };
 
 function readSet(key: string): Set<string> {

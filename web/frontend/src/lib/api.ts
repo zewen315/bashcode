@@ -44,6 +44,18 @@ export type SubmitResult = {
   elapsed_seconds: number;
 };
 
+// The reduced shape both the live submit result and a fetched
+// historical submission's details get normalized into before
+// rendering — see SubmissionResult in problem-submissions.tsx. Never
+// the full per-test array (judge results can be huge; only the first
+// failure is ever shown, live or historical).
+export type SubmissionResultData = {
+  verdict: SubmitResult["verdict"];
+  elapsed_seconds: number;
+  total_tests: number;
+  first_failure: { name: string; expected: string; actual: string } | null;
+};
+
 export async function listProblems(): Promise<ProblemSummary[]> {
   const res = await fetch(`${API_URL}/problems`, { cache: "no-store" });
   if (!res.ok) throw new Error(`failed to load problems (${res.status})`);
