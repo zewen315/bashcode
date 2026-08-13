@@ -455,7 +455,7 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
                 </TableCell>
                 <TableCell className="text-center">
                   <Link
-                    href="/discussions"
+                    href={`/problems/${p.slug}?tab=discussion`}
                     aria-label="Discuss this problem"
                     className="inline-flex text-muted-foreground/60 hover:text-foreground"
                   >

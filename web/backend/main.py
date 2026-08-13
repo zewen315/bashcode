@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field, StringConstraints
 
 import account
 import auth
+import comments
 import db
 import notifications
 import progress
@@ -59,6 +60,7 @@ app.include_router(auth.router)
 app.include_router(account.router)
 app.include_router(notifications.router)
 app.include_router(progress.router)
+app.include_router(comments.router)
 
 
 @app.on_event("startup")

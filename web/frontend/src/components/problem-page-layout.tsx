@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
@@ -9,20 +9,14 @@ import { ProblemWorkspace } from "@/components/problem-workspace";
 import { ProblemDescription } from "@/components/problem-description";
 import { ProblemSubmissions } from "@/components/problem-submissions";
 import { ProblemSolution } from "@/components/problem-solution";
+import { DiscussionThread } from "@/components/discussion-thread";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { type ProblemDetail, type SubmitResult } from "@/lib/api";
 
 type LeftTab = "description" | "submissions" | "solution" | "discussion";
 
-function DiscussionPlaceholder() {
-  return (
-    <div className="flex flex-col items-center gap-2 px-5 py-16 text-center text-sm text-muted-foreground">
-      <p>Per-problem discussion threads aren&apos;t built yet.</p>
-      <Link href="/discussions" className="text-xs text-foreground underline">
-        See the general Discussions page
-      </Link>
-    </div>
-  );
+function isLeftTab(value: string | null): value is LeftTab {
+  return value === "description" || value === "submissions" || value === "solution" || value === "discussion";
 }
 
 function ProblemTabsList() {
@@ -43,11 +37,17 @@ function ProblemTabsList() {
 // other) if the layout ever switched underneath the user.
 export function ProblemPageLayout({ problem }: { problem: ProblemDetail }) {
   const isDesktop = useMediaQuery("(min-width: 1024px)");
+  const searchParams = useSearchParams();
 
   // Owned here, not inside ProblemWorkspace, so that clicking Submit
   // (which happens in the right-hand workspace) can switch the LEFT
   // panel to its Submissions tab and hand it the result to display.
-  const [leftTab, setLeftTab] = useState<LeftTab>("description");
+  // Initial value honors ?tab= (e.g. the Discuss icon on /problems
+  // deep-links straight into a problem's Discussion tab).
+  const [leftTab, setLeftTab] = useState<LeftTab>(() => {
+    const tab = searchParams.get("tab");
+    return isLeftTab(tab) ? tab : "description";
+  });
   const [submitResult, setSubmitResult] = useState<SubmitResult | null>(null);
 
   function handleSubmitResult(res: SubmitResult) {
@@ -83,7 +83,7 @@ export function ProblemPageLayout({ problem }: { problem: ProblemDetail }) {
               </TabsContent>
               <TabsContent value="discussion" className="min-h-0 flex-1">
                 <ScrollArea className="h-full">
-                  <DiscussionPlaceholder />
+                  <DiscussionThread slug={problem.slug} />
                 </ScrollArea>
               </TabsContent>
             </Tabs>
@@ -120,7 +120,7 @@ export function ProblemPageLayout({ problem }: { problem: ProblemDetail }) {
           <ProblemSolution problem={problem} />
         </TabsContent>
         <TabsContent value="discussion">
-          <DiscussionPlaceholder />
+          <DiscussionThread slug={problem.slug} />
         </TabsContent>
       </Tabs>
       <div className="h-[70vh] border-t">
