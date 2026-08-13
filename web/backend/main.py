@@ -18,6 +18,7 @@ from pydantic import BaseModel, Field, StringConstraints
 import account
 import auth
 import db
+import notifications
 from ratelimit import check_rate_limit
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "judge"))
 from run_submission import judge, run_input  # noqa: E402
@@ -55,6 +56,7 @@ app.add_middleware(
 )
 app.include_router(auth.router)
 app.include_router(account.router)
+app.include_router(notifications.router)
 
 
 @app.on_event("startup")

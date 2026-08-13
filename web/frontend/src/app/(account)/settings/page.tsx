@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
+import { Sun, Moon, Monitor } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -16,16 +18,29 @@ import { useToastManager } from "@/components/ui/toast";
 import { ProfileEditor } from "@/components/profile-editor";
 import { useAuth } from "@/lib/auth-context";
 import { deleteAccount } from "@/lib/account";
+import { cn } from "@/lib/utils";
+
+const THEME_OPTIONS = [
+  { value: "light", label: "Light", icon: Sun },
+  { value: "dark", label: "Dark", icon: Moon },
+  { value: "system", label: "System", icon: Monitor },
+] as const;
 
 export default function SettingsPage() {
   const router = useRouter();
   const { user, setUser } = useAuth();
   const { add: addToast } = useToastManager();
+  const { theme, setTheme } = useTheme();
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // AccountLayout (app/(account)/layout.tsx) already guards against a
-  // signed-out visitor and redirects before this ever renders.
+  // signed-out visitor and redirects before this ever renders — so,
+  // unlike the nav-bar's always-rendered ThemeToggle, everything below
+  // this point only ever renders after the client has already
+  // hydrated (the server/first-paint output is always null, gated by
+  // the check above), which means there's no hydration mismatch risk
+  // here and no need for ThemeToggle's extra `mounted` guard.
   if (!user) return null;
 
   async function handleDelete() {
@@ -48,6 +63,24 @@ export default function SettingsPage() {
       <section className="mb-10 flex flex-col gap-4">
         <h2 className="text-sm font-medium text-muted-foreground">Profile</h2>
         <ProfileEditor user={user} onUserChange={setUser} />
+      </section>
+
+      <section className="mb-10 flex flex-col gap-3 border-t pt-6">
+        <h2 className="text-sm font-medium text-muted-foreground">Appearance</h2>
+        <div className="flex gap-2">
+          {THEME_OPTIONS.map(({ value, label, icon: Icon }) => (
+            <Button
+              key={value}
+              variant="outline"
+              size="sm"
+              onClick={() => setTheme(value)}
+              className={cn(theme === value && "border-primary bg-muted")}
+            >
+              <Icon className="size-4" />
+              {label}
+            </Button>
+          ))}
+        </div>
       </section>
 
       <section className="flex flex-col gap-2 border-t pt-6">

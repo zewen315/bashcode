@@ -54,7 +54,7 @@ export function RecentActivity({ problems }: { problems: ProblemSummary[] }) {
       })}
       {activity.length > WIDGET_LIMIT && (
         <Link
-          href="/activity"
+          href="/profile"
           className="flex items-center gap-0.5 text-xs text-muted-foreground hover:text-foreground"
         >
           More <ChevronRight className="size-3" />
