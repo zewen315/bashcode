@@ -8,7 +8,7 @@ export default function AboutPage() {
     <>
       <main className="mx-auto max-w-2xl px-6 py-16">
         <div className="mb-10 flex flex-col items-center gap-3 border-b pb-10 text-center">
-          <div className="flex size-11 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <div className="mb-2 flex size-11 items-center justify-center rounded-full bg-primary/10 text-primary">
             <TerminalSquare className="size-5" />
           </div>
           <h1 className="text-2xl font-semibold">About BashCode</h1>

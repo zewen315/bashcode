@@ -7,7 +7,7 @@ export default function DiscussionsPage() {
     <>
       <main className="mx-auto max-w-4xl px-6 py-16">
         <div className="mb-8 flex flex-col items-center gap-2 border-b pb-8 text-center">
-          <div className="flex size-11 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <div className="mb-2 flex size-11 items-center justify-center rounded-full bg-primary/10 text-primary">
             <MessagesSquare className="size-5" />
           </div>
           <h1 className="text-2xl font-semibold">Discussions</h1>
