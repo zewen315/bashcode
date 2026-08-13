@@ -1,11 +1,12 @@
 import Link from "next/link";
 
 const SUPPORT_MAILTO = "mailto:support@bashcode.net";
+const TWITTER_URL = "https://x.com/bashcodenet";
 
-// Not real accounts yet — rendered as plain (non-clickable) text rather
-// than <a href="#"> placeholders, since a dead link that looks clickable
-// is worse than an honestly inert label.
-const SOCIALS = ["X (Twitter)", "Reddit", "GitHub"];
+// Reddit/GitHub aren't real accounts yet — rendered as plain
+// (non-clickable) text rather than <a href="#"> placeholders, since a
+// dead link that looks clickable is worse than an honestly inert label.
+const INERT_SOCIALS = ["Reddit", "GitHub"];
 
 export function Footer() {
   const year = new Date().getFullYear();
@@ -27,7 +28,15 @@ export function Footer() {
 
         <div className="flex flex-col gap-2">
           <p className="font-semibold">Socials</p>
-          {SOCIALS.map((label) => (
+          <a
+            href={TWITTER_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-muted-foreground hover:text-foreground"
+          >
+            X (Twitter)
+          </a>
+          {INERT_SOCIALS.map((label) => (
             <span key={label} className="text-muted-foreground">
               {label}
             </span>
