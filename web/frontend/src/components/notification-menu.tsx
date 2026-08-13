@@ -76,30 +76,32 @@ export function NotificationMenu() {
           <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
             Sign in to see notifications.
           </DropdownMenuLabel>
-        ) : visibleNotifications.length === 0 ? (
-          <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-            No notifications yet.
-          </DropdownMenuLabel>
         ) : (
           <>
-            <DropdownMenuGroup>
-              {visibleNotifications.slice(0, WIDGET_LIMIT).map((n) => (
-                <DropdownMenuItem
-                  key={n.id}
-                  onClick={() => !n.read && handleMarkRead(n.id)}
-                  className="flex-col items-start gap-0.5 whitespace-normal"
-                >
-                  <div className="flex w-full items-center gap-1.5">
-                    {!n.read && <span className="size-1.5 shrink-0 rounded-full bg-primary" />}
-                    <span className="font-medium">{n.title}</span>
-                    <span className="ml-auto shrink-0 text-xs text-muted-foreground">
-                      {relativeTime(new Date(n.created_at).getTime(), now)}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">{n.body}</p>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuGroup>
+            {visibleNotifications.length === 0 ? (
+              <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                No notifications yet.
+              </DropdownMenuLabel>
+            ) : (
+              <DropdownMenuGroup>
+                {visibleNotifications.slice(0, WIDGET_LIMIT).map((n) => (
+                  <DropdownMenuItem
+                    key={n.id}
+                    onClick={() => !n.read && handleMarkRead(n.id)}
+                    className="flex-col items-start gap-0.5 whitespace-normal"
+                  >
+                    <div className="flex w-full items-center gap-1.5">
+                      {!n.read && <span className="size-1.5 shrink-0 rounded-full bg-primary" />}
+                      <span className="font-medium">{n.title}</span>
+                      <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+                        {relativeTime(new Date(n.created_at).getTime(), now)}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{n.body}</p>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuGroup>
+            )}
             {unreadCount > 0 && (
               <DropdownMenuItem onClick={handleMarkAllRead} className="justify-center text-xs">
                 Mark all as read
