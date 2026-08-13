@@ -89,9 +89,16 @@ export function NotificationMenu() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-72">
         {notifications.length === 0 ? (
-          <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-            No notifications yet.
-          </DropdownMenuLabel>
+          // DropdownMenuLabel wraps Base UI's Menu.GroupLabel, which
+          // throws ("MenuGroupContext is missing") unless it has a
+          // Menu.Group ancestor — a real, pre-existing crash whenever
+          // a signed-in user had zero notifications, just never
+          // exercised until now.
+          <DropdownMenuGroup>
+            <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+              No notifications yet.
+            </DropdownMenuLabel>
+          </DropdownMenuGroup>
         ) : (
           <DropdownMenuGroup>
             {notifications.slice(0, WIDGET_LIMIT).map((n) => (

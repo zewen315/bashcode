@@ -58,21 +58,39 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
             <p className="text-center text-sm text-muted-foreground">Sign in to see your account.</p>
           )}
           <nav className="flex flex-row gap-1 sm:flex-col">
-            {NAV_ITEMS.map(({ href, label, icon: Icon }) => (
-              <Link
-                key={href}
-                href={href}
-                className={cn(
-                  "flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm",
-                  pathname === href
-                    ? "bg-muted font-medium text-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                )}
-              >
-                <Icon className="size-4" />
-                {label}
-              </Link>
-            ))}
+            {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+              // Signed out: only the allowlisted route(s) actually go
+              // anywhere — the rest would just redirect straight back
+              // to /problems, which reads as broken rather than
+              // intentional. Rendered as inert text, not a dead link.
+              if (!user && !PUBLIC_ACCOUNT_ROUTES.includes(href)) {
+                return (
+                  <span
+                    key={href}
+                    aria-disabled="true"
+                    className="flex cursor-not-allowed items-center gap-2 rounded-md px-2.5 py-1.5 text-sm text-muted-foreground/40"
+                  >
+                    <Icon className="size-4" />
+                    {label}
+                  </span>
+                );
+              }
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={cn(
+                    "flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm",
+                    pathname === href
+                      ? "bg-muted font-medium text-foreground"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
+                >
+                  <Icon className="size-4" />
+                  {label}
+                </Link>
+              );
+            })}
           </nav>
         </aside>
         <div className="min-w-0 flex-1">{children}</div>
