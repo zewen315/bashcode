@@ -58,7 +58,10 @@ export function Leaderboard() {
         <span className="text-xs text-muted-foreground">{data.solved} solved</span>
       </div>
       <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-        <div className="h-full rounded-full bg-primary" style={{ width: `${data.percentile}%` }} />
+        <div
+          className="h-full rounded-full bg-emerald-500"
+          style={{ width: `${data.percentile}%` }}
+        />
       </div>
       <p className="text-xs text-muted-foreground">
         Ahead of {data.percentile}% of solvers

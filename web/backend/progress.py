@@ -54,11 +54,11 @@ def get_progress(request: Request):
             cur.execute(
                 """
                 SELECT DISTINCT (submitted_at AT TIME ZONE 'UTC')::date
-                FROM submissions WHERE user_id = %s
+                FROM submissions WHERE user_id = %s AND verdict = 'Accepted'
                 """,
                 (user_id,),
             )
-            active_dates = [row[0].isoformat() for row in cur.fetchall()]
+            finished_dates = [row[0].isoformat() for row in cur.fetchall()]
 
             cur.execute(
                 """
@@ -85,7 +85,7 @@ def get_progress(request: Request):
         "starred": starred,
         "attempted": attempted,
         "activity": activity,
-        "active_dates": active_dates,
+        "finished_dates": finished_dates,
         "finished_last_3_days": finished_last_3_days,
         "finished_last_7_days": finished_last_7_days,
     }

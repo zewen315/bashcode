@@ -12,7 +12,7 @@ function dateKey(year: number, month: number, day: number): string {
 }
 
 export function MiniCalendar({ today }: { today: Date }) {
-  const { activeDates, finishedLast3, finishedLast7, loaded } = useProgress();
+  const { finishedDates, finishedLast3, finishedLast7, loaded } = useProgress();
   // Viewed month is independent of "today" — navigating away from the
   // current month must not change which cell (if any) gets the "today"
   // treatment, only which month's days are laid out.
@@ -70,17 +70,20 @@ export function MiniCalendar({ today }: { today: Date }) {
         ))}
         {cells.map((day, i) => {
           const isToday = isCurrentMonth && day === today.getDate();
-          const isActive = day !== null && activeDates.has(dateKey(year, month, day));
+          const isFinished = day !== null && finishedDates.has(dateKey(year, month, day));
           return (
             <span
               key={i}
               className={cn(
                 "mx-auto flex size-6 items-center justify-center rounded-full",
-                isToday
-                  ? "bg-primary text-primary-foreground"
-                  : isActive
-                    ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
-                    : "text-foreground",
+                isFinished
+                  ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
+                  : "text-foreground",
+                // Today is a hollow ring, layered on top of the green
+                // fill above when today also has a finished problem —
+                // not a solid fill, so it never gets mistaken for
+                // "finished" on its own.
+                isToday && "ring-2 ring-inset ring-primary",
               )}
             >
               {day ?? ""}

@@ -26,7 +26,7 @@ type ProgressContextValue = {
   starred: Set<string>;
   attempted: Set<string>;
   activity: ActivityEntry[];
-  activeDates: Set<string>;
+  finishedDates: Set<string>;
   finishedLast3: number;
   finishedLast7: number;
   toggleStar: (slug: string) => void;
@@ -41,7 +41,9 @@ type ProgressContextValue = {
 // query directly, only the same last-15-entries local-progress.ts
 // already keeps for RecentActivity. Inherits that cap's limitation.
 function deriveFromActivity(activity: ActivityEntry[]) {
-  const activeDates = new Set(activity.map((a) => new Date(a.at).toISOString().slice(0, 10)));
+  const finishedDates = new Set(
+    activity.filter((a) => a.verdict === "Accepted").map((a) => new Date(a.at).toISOString().slice(0, 10)),
+  );
   const now = Date.now();
   const finishedLast3 = new Set(
     activity.filter((a) => a.verdict === "Accepted" && now - a.at <= 3 * DAY_MS).map((a) => a.slug),
@@ -49,7 +51,7 @@ function deriveFromActivity(activity: ActivityEntry[]) {
   const finishedLast7 = new Set(
     activity.filter((a) => a.verdict === "Accepted" && now - a.at <= 7 * DAY_MS).map((a) => a.slug),
   ).size;
-  return { activeDates, finishedLast3, finishedLast7 };
+  return { finishedDates, finishedLast3, finishedLast7 };
 }
 
 const ProgressContext = createContext<ProgressContextValue | null>(null);
@@ -68,7 +70,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
   const [starred, setStarred] = useState<Set<string>>(new Set());
   const [attempted, setAttempted] = useState<Set<string>>(new Set());
   const [activity, setActivity] = useState<ActivityEntry[]>([]);
-  const [activeDates, setActiveDates] = useState<Set<string>>(new Set());
+  const [finishedDates, setFinishedDates] = useState<Set<string>>(new Set());
   const [finishedLast3, setFinishedLast3] = useState(0);
   const [finishedLast7, setFinishedLast7] = useState(0);
 
@@ -103,7 +105,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         starred: new Set(data?.starred ?? []),
         attempted: new Set(data?.attempted ?? []),
         activity: data?.activity ?? [],
-        activeDates: new Set(data?.active_dates ?? []),
+        finishedDates: new Set(data?.finished_dates ?? []),
         finishedLast3: data?.finished_last_3_days ?? 0,
         finishedLast7: data?.finished_last_7_days ?? 0,
       };
@@ -115,7 +117,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       setStarred(result.starred);
       setAttempted(result.attempted);
       setActivity(result.activity);
-      setActiveDates(result.activeDates);
+      setFinishedDates(result.finishedDates);
       setFinishedLast3(result.finishedLast3);
       setFinishedLast7(result.finishedLast7);
       setLoaded(true);
@@ -153,9 +155,9 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     }
     setActivity((prev) => [{ slug, verdict, at }, ...prev].slice(0, ACTIVITY_LIMIT));
     setAttempted((prev) => new Set(prev).add(slug));
-    setActiveDates((prev) => new Set(prev).add(new Date(at).toISOString().slice(0, 10)));
     if (verdict === "Accepted") {
       setSolved((prev) => new Set(prev).add(slug));
+      setFinishedDates((prev) => new Set(prev).add(new Date(at).toISOString().slice(0, 10)));
       setFinishedLast3((prev) => prev + 1);
       setFinishedLast7((prev) => prev + 1);
     }
@@ -165,7 +167,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     setSolved(new Set());
     setAttempted(new Set());
     setActivity([]);
-    setActiveDates(new Set());
+    setFinishedDates(new Set());
     setFinishedLast3(0);
     setFinishedLast7(0);
   }
@@ -178,7 +180,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         starred,
         attempted,
         activity,
-        activeDates,
+        finishedDates,
         finishedLast3,
         finishedLast7,
         toggleStar,

@@ -14,7 +14,7 @@ export type ProgressData = {
   starred: string[];
   attempted: string[];
   activity: ActivityEntry[];
-  active_dates: string[];
+  finished_dates: string[];
   finished_last_3_days: number;
   finished_last_7_days: number;
 };
