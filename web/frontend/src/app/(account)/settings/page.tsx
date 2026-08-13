@@ -18,6 +18,7 @@ import { useToastManager } from "@/components/ui/toast";
 import { ProfileEditor } from "@/components/profile-editor";
 import { useAuth } from "@/lib/auth-context";
 import { deleteAccount } from "@/lib/account";
+import { resetCodingHistory } from "@/lib/local-progress";
 import { cn } from "@/lib/utils";
 
 const THEME_OPTIONS = [
@@ -56,6 +57,11 @@ export default function SettingsPage() {
     }
   }
 
+  function handleResetHistory() {
+    resetCodingHistory();
+    addToast({ title: "Coding history reset" });
+  }
+
   return (
     <>
       <h1 className="mb-6 text-2xl font-semibold">Settings</h1>
@@ -83,29 +89,57 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      <section className="flex flex-col gap-2 border-t pt-6">
+      <section className="flex flex-col gap-4 border-t pt-6">
         <h2 className="text-sm font-medium text-destructive">Danger zone</h2>
-        <p className="text-sm text-muted-foreground">
-          Deleting your account removes it immediately and can&apos;t be undone.
-        </p>
-        <AlertDialog>
-          <AlertDialogTrigger render={<Button variant="destructive" className="self-start" />}>
-            Delete account
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogTitle>Delete your account?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This permanently deletes your account and signs you out everywhere. This can&apos;t be undone.
-            </AlertDialogDescription>
-            <AlertDialogFooter>
-              <AlertDialogClose render={<Button variant="outline" />}>Cancel</AlertDialogClose>
-              <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
-                {deleting ? "Deleting…" : "Yes, delete my account"}
-              </Button>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-        {deleteError && <p className="text-sm text-destructive">{deleteError}</p>}
+
+        <div className="flex flex-col gap-2">
+          <p className="text-sm text-muted-foreground">
+            Reset your solved problems, attempted problems, and recent activity. Starred problems aren&apos;t
+            affected. This can&apos;t be undone.
+          </p>
+          <AlertDialog>
+            <AlertDialogTrigger render={<Button variant="destructive" className="self-start" />}>
+              Reset coding history
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogTitle>Reset your coding history?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This clears your solved problems, attempted problems, and recent activity in this browser.
+                Starred problems aren&apos;t affected. This can&apos;t be undone.
+              </AlertDialogDescription>
+              <AlertDialogFooter>
+                <AlertDialogClose render={<Button variant="outline" />}>Cancel</AlertDialogClose>
+                <AlertDialogClose render={<Button variant="destructive" onClick={handleResetHistory} />}>
+                  Yes, reset my history
+                </AlertDialogClose>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <p className="text-sm text-muted-foreground">
+            Deleting your account removes it immediately and can&apos;t be undone.
+          </p>
+          <AlertDialog>
+            <AlertDialogTrigger render={<Button variant="destructive" className="self-start" />}>
+              Delete account
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogTitle>Delete your account?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This permanently deletes your account and signs you out everywhere. This can&apos;t be undone.
+              </AlertDialogDescription>
+              <AlertDialogFooter>
+                <AlertDialogClose render={<Button variant="outline" />}>Cancel</AlertDialogClose>
+                <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
+                  {deleting ? "Deleting…" : "Yes, delete my account"}
+                </Button>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          {deleteError && <p className="text-sm text-destructive">{deleteError}</p>}
+        </div>
       </section>
     </>
   );

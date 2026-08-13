@@ -80,3 +80,13 @@ export function getRecentActivity(): ActivityEntry[] {
 export function getAttemptedSlugs(): Set<string> {
   return readSet(ATTEMPTED_KEY);
 }
+
+// Deliberately leaves STARRED_KEY untouched — starring is a bookmark
+// list, not "coding history"; a user resetting their submission
+// record wouldn't expect their saved-for-later list to vanish too.
+export function resetCodingHistory() {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(SOLVED_KEY);
+  window.localStorage.removeItem(ATTEMPTED_KEY);
+  window.localStorage.removeItem(ACTIVITY_KEY);
+}
