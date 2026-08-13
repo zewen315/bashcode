@@ -38,12 +38,7 @@ import {
 } from "@/components/ui/table";
 import { type ProblemSummary } from "@/lib/api";
 import { difficultyColor } from "@/lib/difficulty";
-import {
-  getSolvedSlugs,
-  getStarredSlugs,
-  toggleStarred,
-  getAttemptedSlugs,
-} from "@/lib/local-progress";
+import { useProgress } from "@/lib/progress-context";
 import { Widget } from "@/components/widget";
 import { ProblemTags } from "@/components/problem-tags";
 import { TagInput } from "@/components/tag-input";
@@ -128,20 +123,10 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
   const [sort, setSort] = useState<Sort>(null);
   const [page, setPage] = useState(1);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [solved, setSolved] = useState<Set<string>>(new Set());
-  const [starred, setStarred] = useState<Set<string>>(new Set());
-  const [attempted, setAttempted] = useState<Set<string>>(new Set());
-
-  // Solved/starred/attempted state lives in localStorage, so it can only
-  // be read after mount — reading it during SSR would always show empty.
-  useEffect(() => {
-    setSolved(getSolvedSlugs());
-    setStarred(getStarredSlugs());
-    setAttempted(getAttemptedSlugs());
-  }, []);
+  const { solved, starred, attempted, toggleStar } = useProgress();
 
   function handleToggleStar(slug: string) {
-    setStarred(new Set(toggleStarred(slug)));
+    toggleStar(slug);
   }
 
   function handleRandom() {

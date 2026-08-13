@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { NavBar } from "@/components/nav-bar";
 import { BetaBanner } from "@/components/beta-banner";
 import { AuthProvider } from "@/lib/auth-context";
+import { ProgressProvider } from "@/lib/progress-context";
 import { ToastProvider, Toaster } from "@/components/ui/toast";
 import "./globals.css";
 
@@ -33,10 +34,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
           <ToastProvider>
             <AuthProvider>
-              <BetaBanner />
-              <NavBar />
-              {children}
-              <Toaster />
+              <ProgressProvider>
+                <BetaBanner />
+                <NavBar />
+                {children}
+                <Toaster />
+              </ProgressProvider>
             </AuthProvider>
           </ToastProvider>
         </ThemeProvider>

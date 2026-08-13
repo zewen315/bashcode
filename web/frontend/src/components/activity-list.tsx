@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, XCircle, Clock } from "lucide-react";
 import { type ProblemSummary } from "@/lib/api";
-import { getRecentActivity, ACTIVITY_LIMIT, type ActivityEntry } from "@/lib/local-progress";
+import { useAuth } from "@/lib/auth-context";
+import { useProgress } from "@/lib/progress-context";
+import { ACTIVITY_LIMIT } from "@/lib/local-progress";
 import { relativeTime } from "@/lib/relative-time";
 
 const VERDICT_ICON: Record<string, typeof CheckCircle2> = {
@@ -20,18 +22,16 @@ const VERDICT_COLOR: Record<string, string> = {
 };
 
 export function ActivityList({ problems }: { problems: ProblemSummary[] }) {
-  const [activity, setActivity] = useState<ActivityEntry[]>([]);
-  const [now, setNow] = useState<number | null>(null);
-
-  useEffect(() => {
-    setActivity(getRecentActivity());
-    setNow(Date.now());
-  }, []);
+  const { user } = useAuth();
+  const { activity, loaded } = useProgress();
+  // Lazy initializer, not a render-time call — Date.now() is impure
+  // and can't be called directly in the render body.
+  const [now] = useState(() => Date.now());
 
   const titleFor = (slug: string) => problems.find((p) => p.slug === slug)?.title ?? slug;
   const slugFor = (slug: string) => (problems.some((p) => p.slug === slug) ? `/problems/${slug}` : null);
 
-  if (now === null) return null;
+  if (!loaded) return null;
 
   if (activity.length === 0) {
     return (
@@ -68,8 +68,8 @@ export function ActivityList({ problems }: { problems: ProblemSummary[] }) {
         );
       })}
       <p className="mt-2 text-xs text-muted-foreground">
-        Only your {ACTIVITY_LIMIT} most recent submissions across all problems are kept (in
-        this browser only) — older ones may have rolled off.
+        Only your {ACTIVITY_LIMIT} most recent submissions across all problems are kept
+        {user ? "" : " (in this browser only)"} — older ones may have rolled off.
       </p>
     </div>
   );

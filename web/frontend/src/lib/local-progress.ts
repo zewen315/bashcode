@@ -1,7 +1,11 @@
-// Client-only, per-browser progress tracking. There's no account system
-// yet (see README: auth is explicitly out of scope for V1), so "solved"
-// and "starred" state lives in localStorage rather than the backend —
-// real functionality, just scoped to one browser instead of a user.
+// Client-only, per-browser progress tracking — the anonymous-mode
+// implementation. Signed-in progress lives in Postgres instead (see
+// lib/progress-context.tsx); this file is only ever called from
+// inside ProgressProvider now, never directly from components, so
+// this remains exactly what a signed-out visitor sees. On login,
+// whatever's here gets uploaded and merged into the account (see
+// hasLegacyData/readAllLocalProgress/clearAllLocalProgress below),
+// then cleared — see docs/decisions/0008-progress-to-postgres.md.
 const SOLVED_KEY = "bashcode:solved";
 const STARRED_KEY = "bashcode:starred";
 const ATTEMPTED_KEY = "bashcode:attempted";
@@ -81,12 +85,29 @@ export function getAttemptedSlugs(): Set<string> {
   return readSet(ATTEMPTED_KEY);
 }
 
-// Deliberately leaves STARRED_KEY untouched — starring is a bookmark
-// list, not "coding history"; a user resetting their submission
-// record wouldn't expect their saved-for-later list to vanish too.
-export function resetCodingHistory() {
+export function hasLegacyData(): boolean {
+  if (typeof window === "undefined") return false;
+  return [SOLVED_KEY, STARRED_KEY, ATTEMPTED_KEY, ACTIVITY_KEY].some(
+    (key) => window.localStorage.getItem(key) !== null,
+  );
+}
+
+// The payload shape /progress/import expects — just starred + activity.
+// solved/attempted aren't sent separately: they're both derived
+// server-side from activity's submissions, same as they are once a
+// signed-in user's data lives in Postgres.
+export function readAllLocalProgress(): { starred: string[]; activity: ActivityEntry[] } {
+  return { starred: [...getStarredSlugs()], activity: getRecentActivity() };
+}
+
+// Distinct from resetCodingHistory(): this clears starred too, because
+// it's called after a successful import (the data has been safely
+// migrated to the account, not destroyed), not in response to the user
+// asking to delete their history.
+export function clearAllLocalProgress() {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(SOLVED_KEY);
+  window.localStorage.removeItem(STARRED_KEY);
   window.localStorage.removeItem(ATTEMPTED_KEY);
   window.localStorage.removeItem(ACTIVITY_KEY);
 }

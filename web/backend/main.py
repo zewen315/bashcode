@@ -19,6 +19,7 @@ import account
 import auth
 import db
 import notifications
+import progress
 from ratelimit import check_rate_limit
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "judge"))
 from run_submission import judge, run_input  # noqa: E402
@@ -57,6 +58,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(account.router)
 app.include_router(notifications.router)
+app.include_router(progress.router)
 
 
 @app.on_event("startup")
@@ -266,9 +268,28 @@ def submit(req: SubmitRequest, request: Request):
 
     scratch_dir = _write_scratch_request(req.code)
     try:
-        return _run_judge(judge, req.slug, scratch_dir / "submission.sh", PROBLEMS_DIR)
+        result = _run_judge(judge, req.slug, scratch_dir / "submission.sh", PROBLEMS_DIR)
     finally:
         shutil.rmtree(scratch_dir, ignore_errors=True)
+
+    # Recorded here, atomically with judging, rather than via a second
+    # client call after the fact — works anonymously too (get_user_id_or_none
+    # never raises), and the judge result is returned regardless of
+    # whether this write succeeds, since a transient DB hiccup shouldn't
+    # ever cost the user their actual submission result.
+    user_id = auth.get_user_id_or_none(request)
+    if user_id is not None:
+        try:
+            with db.pool.connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "INSERT INTO submissions (user_id, slug, verdict) VALUES (%s, %s, %s)",
+                        (user_id, req.slug, result["verdict"]),
+                    )
+        except Exception as exc:  # noqa: BLE001
+            print(f"Failed to record submission for user {user_id}: {exc}", file=sys.stderr)
+
+    return result
 
 
 @app.post("/run")

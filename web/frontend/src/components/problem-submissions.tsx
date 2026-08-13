@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { CheckCircle2, XCircle, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { getRecentActivity, ACTIVITY_LIMIT, type ActivityEntry } from "@/lib/local-progress";
+import { useAuth } from "@/lib/auth-context";
+import { useProgress } from "@/lib/progress-context";
+import { ACTIVITY_LIMIT } from "@/lib/local-progress";
 import { relativeTime } from "@/lib/relative-time";
 import { type SubmitResult } from "@/lib/api";
 
@@ -51,12 +53,13 @@ function LiveResult({ result }: { result: SubmitResult }) {
   );
 }
 
-// Real, not a placeholder — filters the same localStorage activity log
-// the "Recent Activity" widget uses, scoped to this problem's slug. The
-// log is a shared, capped-at-ACTIVITY_LIMIT feed across ALL problems
-// (see local-progress.ts), so once you've solved a handful of others,
-// older submissions to *this* problem can roll off — worth knowing this
-// isn't a complete history, just what's still in the shared recent feed.
+// Real, not a placeholder — filters the shared activity feed (from
+// ProgressProvider — localStorage when signed out, Postgres when
+// signed in) the "Recent Activity" widget uses too, scoped to this
+// problem's slug. The feed is shared and capped at ACTIVITY_LIMIT
+// across ALL problems, so once you've solved a handful of others,
+// older submissions to *this* problem can roll off — worth knowing
+// this isn't a complete history, just what's still in the shared feed.
 export function ProblemSubmissions({
   slug,
   liveResult,
@@ -64,18 +67,15 @@ export function ProblemSubmissions({
   slug: string;
   liveResult?: SubmitResult | null;
 }) {
-  const [entries, setEntries] = useState<ActivityEntry[]>([]);
-  const [now, setNow] = useState<number | null>(null);
+  const { user } = useAuth();
+  const { activity, loaded } = useProgress();
+  // Lazy initializer, not a render-time call — Date.now() is impure
+  // and can't be called directly in the render body.
+  const [now] = useState(() => Date.now());
 
-  // Re-reads whenever liveResult changes too — ProblemWorkspace already
-  // wrote the new entry to localStorage by the time this fires, but this
-  // component's own state was set on mount and won't pick it up otherwise.
-  useEffect(() => {
-    setEntries(getRecentActivity().filter((e) => e.slug === slug));
-    setNow(Date.now());
-  }, [slug, liveResult]);
+  if (!loaded) return null;
 
-  if (now === null) return null;
+  const entries = activity.filter((e) => e.slug === slug);
 
   return (
     <div className="flex flex-col gap-3 px-5 py-4">
@@ -103,7 +103,7 @@ export function ProblemSubmissions({
           })}
           <p className="mt-1 text-xs text-muted-foreground">
             Only your {ACTIVITY_LIMIT} most recent submissions across all problems are kept
-            (in this browser only) — older ones may have rolled off.
+            {user ? "" : " (in this browser only)"} — older ones may have rolled off.
           </p>
         </div>
       )}

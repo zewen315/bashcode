@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, XCircle, Clock, ChevronRight } from "lucide-react";
 import { type ProblemSummary } from "@/lib/api";
-import { getRecentActivity, type ActivityEntry } from "@/lib/local-progress";
+import { useProgress } from "@/lib/progress-context";
 import { relativeTime } from "@/lib/relative-time";
 
 const WIDGET_LIMIT = 3;
@@ -22,17 +22,14 @@ const VERDICT_COLOR: Record<string, string> = {
 };
 
 export function RecentActivity({ problems }: { problems: ProblemSummary[] }) {
-  const [activity, setActivity] = useState<ActivityEntry[]>([]);
-  const [now, setNow] = useState<number | null>(null);
-
-  useEffect(() => {
-    setActivity(getRecentActivity());
-    setNow(Date.now());
-  }, []);
+  const { activity, loaded } = useProgress();
+  // Lazy initializer, not a render-time call — Date.now() is impure
+  // and can't be called directly in the render body.
+  const [now] = useState(() => Date.now());
 
   const titleFor = (slug: string) => problems.find((p) => p.slug === slug)?.title ?? slug;
 
-  if (now === null) return null;
+  if (!loaded) return null;
 
   if (activity.length === 0) {
     return <p className="text-sm text-muted-foreground">No submissions yet — Submit a solution to see it here.</p>;

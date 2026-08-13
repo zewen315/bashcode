@@ -14,7 +14,7 @@ import {
   type SubmitResult,
   type ProblemSample,
 } from "@/lib/api";
-import { markSolved, recordActivity } from "@/lib/local-progress";
+import { useProgress } from "@/lib/progress-context";
 
 type Verdict = "Accepted" | "Wrong Answer";
 
@@ -45,6 +45,7 @@ export function ProblemWorkspace({
   onSubmitResult: (result: SubmitResult) => void;
 }) {
   const { resolvedTheme } = useTheme();
+  const { recordSubmission } = useProgress();
   const [code, setCode] = useState(starterCode);
   const [selectedCase, setSelectedCase] = useState(0);
   const [bottomTab, setBottomTab] = useState<"testcase" | "result">("testcase");
@@ -99,8 +100,7 @@ export function ProblemWorkspace({
     setSubmitError(null);
     try {
       const res = await submitSolution(slug, code);
-      recordActivity(slug, res.verdict, Date.now());
-      if (res.verdict === "Accepted") markSolved(slug);
+      recordSubmission(slug, res.verdict, Date.now());
       onSubmitResult(res);
     } catch {
       setSubmitError("Submission failed — is the backend running?");

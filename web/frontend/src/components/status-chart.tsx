@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { type ProblemSummary } from "@/lib/api";
-import { getSolvedSlugs } from "@/lib/local-progress";
+import { useProgress } from "@/lib/progress-context";
 
 // Validated via the dataviz skill's palette validator against both the
 // light and dark chart surfaces (all checks pass) — deliberately a
@@ -20,11 +19,7 @@ const STROKE = 10;
 const GAP = 2; // percentage points of circumference, between segments
 
 export function StatusChart({ problems }: { problems: ProblemSummary[] }) {
-  const [solved, setSolved] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    setSolved(getSolvedSlugs());
-  }, []);
+  const { solved } = useProgress();
 
   const total = problems.length;
   const solvedCount = problems.filter((p) => solved.has(p.slug)).length;

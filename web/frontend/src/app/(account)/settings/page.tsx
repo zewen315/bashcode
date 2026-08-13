@@ -17,8 +17,9 @@ import {
 import { useToastManager } from "@/components/ui/toast";
 import { ProfileEditor } from "@/components/profile-editor";
 import { useAuth } from "@/lib/auth-context";
+import { useProgress } from "@/lib/progress-context";
 import { deleteAccount } from "@/lib/account";
-import { resetCodingHistory } from "@/lib/local-progress";
+import { resetSubmissions } from "@/lib/progress-api";
 import { cn } from "@/lib/utils";
 
 const THEME_OPTIONS = [
@@ -30,6 +31,7 @@ const THEME_OPTIONS = [
 export default function SettingsPage() {
   const router = useRouter();
   const { user, setUser } = useAuth();
+  const { clearHistory } = useProgress();
   const { add: addToast } = useToastManager();
   const { theme, setTheme } = useTheme();
   const [deleting, setDeleting] = useState(false);
@@ -57,8 +59,12 @@ export default function SettingsPage() {
     }
   }
 
-  function handleResetHistory() {
-    resetCodingHistory();
+  async function handleResetHistory() {
+    // This page is only ever reachable signed in (AccountLayout
+    // redirects otherwise) — always the DB-backed reset, never the
+    // anonymous-mode local-progress.ts path.
+    await resetSubmissions();
+    clearHistory();
     addToast({ title: "Coding history reset" });
   }
 
@@ -104,8 +110,8 @@ export default function SettingsPage() {
             <AlertDialogContent>
               <AlertDialogTitle>Reset your coding history?</AlertDialogTitle>
               <AlertDialogDescription>
-                This clears your solved problems, attempted problems, and recent activity in this browser.
-                Starred problems aren&apos;t affected. This can&apos;t be undone.
+                This clears your solved problems, attempted problems, and recent activity. Starred problems
+                aren&apos;t affected. This can&apos;t be undone.
               </AlertDialogDescription>
               <AlertDialogFooter>
                 <AlertDialogClose render={<Button variant="outline" />}>Cancel</AlertDialogClose>

@@ -340,22 +340,30 @@ def me(request: Request):
     return {"user": fetch_user(row[0])}
 
 
+def get_user_id_or_none(request: Request) -> int | None:
+    """For endpoints that work both signed in and anonymous (e.g.
+    /submit), and just want to opportunistically attach a user_id when
+    one's available — never raises.
+    """
+    token = request.cookies.get(SESSION_COOKIE_NAME)
+    if not token:
+        return None
+    with db.pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT user_id FROM sessions WHERE token = %s AND expires_at > now()",
+                (token,),
+            )
+            row = cur.fetchone()
+            return row[0] if row else None
+
+
 def require_user_id(request: Request) -> int:
     """For endpoints that mutate account state — unlike /me (which
     degrades to {"user": null} for the anonymous case), these should
     reject outright.
     """
-    token = request.cookies.get(SESSION_COOKIE_NAME)
-    user_id = None
-    if token:
-        with db.pool.connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "SELECT user_id FROM sessions WHERE token = %s AND expires_at > now()",
-                    (token,),
-                )
-                row = cur.fetchone()
-                user_id = row[0] if row else None
+    user_id = get_user_id_or_none(request)
     if user_id is None:
         raise HTTPException(status_code=401, detail="not signed in")
     return user_id

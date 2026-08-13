@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Star, CheckCircle2, CircleDashed, Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getStarredSlugs, getAttemptedSlugs, getSolvedSlugs } from "@/lib/local-progress";
+import { useProgress } from "@/lib/progress-context";
 
 export function Shortcuts({ totalCount }: { totalCount: number }) {
   const searchParams = useSearchParams();
@@ -13,19 +12,14 @@ export function Shortcuts({ totalCount }: { totalCount: number }) {
   // so they live in separate query params rather than one shared "list".
   const activeProgress = searchParams.get("progress");
   const activeStarred = searchParams.get("starred") === "1";
-  const [starredCount, setStarredCount] = useState<number | null>(null);
-  const [finishedCount, setFinishedCount] = useState<number | null>(null);
-  const [attemptedCount, setAttemptedCount] = useState<number | null>(null);
-  const [notStartedCount, setNotStartedCount] = useState<number | null>(null);
+  const { loaded, solved, starred, attempted } = useProgress();
 
-  useEffect(() => {
-    const attempted = getAttemptedSlugs();
-    const solved = getSolvedSlugs();
-    setStarredCount(getStarredSlugs().size);
-    setFinishedCount(solved.size);
-    setAttemptedCount([...attempted].filter((slug) => !solved.has(slug)).length);
-    setNotStartedCount(totalCount - attempted.size);
-  }, [totalCount]);
+  const starredCount = loaded ? starred.size : null;
+  const finishedCount = loaded ? solved.size : null;
+  const attemptedCount = loaded
+    ? [...attempted].filter((slug) => !solved.has(slug)).length
+    : null;
+  const notStartedCount = loaded ? totalCount - attempted.size : null;
 
   const items = [
     { href: "/problems?starred=1", label: "Starred", icon: Star, count: starredCount, active: activeStarred },
