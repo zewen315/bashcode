@@ -1,10 +1,35 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
+import { useTheme } from "next-themes";
 import ReactMarkdown from "react-markdown";
-import { Textarea } from "@/components/ui/textarea";
+import { commands } from "@uiw/react-md-editor";
+import "@uiw/react-md-editor/markdown-editor.css";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+
+// CodeMirror-adjacent internals touch `window` at import time — must
+// never run during SSR (matches the ssr:false pattern this app would
+// use for any browser-only editor).
+const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
+
+// Curated subset of the default toolbar — this is a comment box, not
+// a document editor, so headings/tables/images/hr are left out.
+const TOOLBAR_COMMANDS = [
+  commands.bold,
+  commands.italic,
+  commands.strikethrough,
+  commands.divider,
+  commands.link,
+  commands.quote,
+  commands.code,
+  commands.codeBlock,
+  commands.divider,
+  commands.unorderedListCommand,
+  commands.orderedListCommand,
+  commands.checkedListCommand,
+];
 
 export function CommentComposer({
   placeholder,
@@ -19,6 +44,7 @@ export function CommentComposer({
   onSubmit: (body: string) => Promise<void> | void;
   onCancel?: () => void;
 }) {
+  const { resolvedTheme } = useTheme();
   const [body, setBody] = useState("");
   const [tab, setTab] = useState<"write" | "preview">("write");
   const [submitting, setSubmitting] = useState(false);
@@ -37,19 +63,21 @@ export function CommentComposer({
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2" data-color-mode={resolvedTheme === "dark" ? "dark" : "light"}>
       <Tabs value={tab} onValueChange={(v) => setTab(v as "write" | "preview")}>
         <TabsList>
           <TabsTrigger value="write">Write</TabsTrigger>
           <TabsTrigger value="preview">Preview</TabsTrigger>
         </TabsList>
         <TabsContent value="write">
-          <Textarea
+          <MDEditor
             value={body}
-            onChange={(e) => setBody(e.target.value)}
-            placeholder={placeholder}
-            autoFocus={autoFocus}
-            className="min-h-24 resize-y"
+            onChange={(v) => setBody(v ?? "")}
+            preview="edit"
+            height={160}
+            commands={TOOLBAR_COMMANDS}
+            extraCommands={[]}
+            textareaProps={{ placeholder, autoFocus }}
           />
         </TabsContent>
         <TabsContent value="preview">
