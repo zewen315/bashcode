@@ -24,6 +24,8 @@ export type ProblemDetail = ProblemSummary & {
   memory_limit_mb: number;
   description: string;
   starter_code: string;
+  solution_code: string;
+  solution_explanation: string;
   samples: ProblemSample[];
 };
 

@@ -8,24 +8,11 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/componen
 import { ProblemWorkspace } from "@/components/problem-workspace";
 import { ProblemDescription } from "@/components/problem-description";
 import { ProblemSubmissions } from "@/components/problem-submissions";
+import { ProblemSolution } from "@/components/problem-solution";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { type ProblemDetail, type SubmitResult } from "@/lib/api";
 
 type LeftTab = "description" | "submissions" | "solution" | "discussion";
-
-function SolutionPlaceholder() {
-  return (
-    <div className="flex flex-col items-center gap-2 px-5 py-16 text-center text-sm text-muted-foreground">
-      <p>
-        Solutions aren&apos;t revealed yet — still deciding the right gating (always
-        visible? only after you solve it?) before building this for real.
-      </p>
-      <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
-        Soon
-      </span>
-    </div>
-  );
-}
 
 function DiscussionPlaceholder() {
   return (
@@ -91,7 +78,7 @@ export function ProblemPageLayout({ problem }: { problem: ProblemDetail }) {
               </TabsContent>
               <TabsContent value="solution" className="min-h-0 flex-1">
                 <ScrollArea className="h-full">
-                  <SolutionPlaceholder />
+                  <ProblemSolution problem={problem} />
                 </ScrollArea>
               </TabsContent>
               <TabsContent value="discussion" className="min-h-0 flex-1">
@@ -130,7 +117,7 @@ export function ProblemPageLayout({ problem }: { problem: ProblemDetail }) {
           <ProblemSubmissions slug={problem.slug} liveResult={submitResult} />
         </TabsContent>
         <TabsContent value="solution">
-          <SolutionPlaceholder />
+          <ProblemSolution problem={problem} />
         </TabsContent>
         <TabsContent value="discussion">
           <DiscussionPlaceholder />

@@ -256,6 +256,10 @@ def get_problem(slug: str):
         **config,
         "description": (problem_dir / "problem.md").read_text(),
         "starter_code": (problem_dir / "starter.sh").read_text(),
+        # Always visible, no reveal gating — see
+        # docs/decisions/0009-problem-solutions.md.
+        "solution_code": (problem_dir / "solution.sh").read_text(),
+        "solution_explanation": (problem_dir / "solution.md").read_text(),
         "samples": samples,
     }
 
