@@ -2,7 +2,6 @@ import Link from "next/link";
 
 const SUPPORT_MAILTO = "mailto:support@bashcode.net";
 const TWITTER_URL = "https://x.com/bashcodenet";
-const COFFEE_URL = "https://buymeacoffee.com/bashcode";
 
 export function Footer() {
   const year = new Date().getFullYear();
@@ -42,14 +41,9 @@ export function Footer() {
           <a href={SUPPORT_MAILTO} className="text-muted-foreground hover:text-foreground">
             support@bashcode.net
           </a>
-          <a
-            href={COFFEE_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-muted-foreground hover:text-foreground"
-          >
+          <Link href="/donate" className="text-muted-foreground hover:text-foreground">
             Buy me a coffee
-          </a>
+          </Link>
         </div>
 
         <div className="flex flex-col gap-2">
