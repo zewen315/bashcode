@@ -1,7 +1,7 @@
 import { MiniCalendar } from "@/components/mini-calendar";
 import { StatusChart } from "@/components/status-chart";
 import { RecentActivity } from "@/components/recent-activity";
-import { LeaderboardPlaceholder } from "@/components/leaderboard-placeholder";
+import { Leaderboard } from "@/components/leaderboard";
 import { Widget } from "@/components/widget";
 import { type ProblemSummary } from "@/lib/api";
 
@@ -24,7 +24,7 @@ export function ProblemsRightRail({
         <RecentActivity problems={problems} />
       </Widget>
       <Widget title="Leaderboard">
-        <LeaderboardPlaceholder />
+        <Leaderboard />
       </Widget>
     </div>
   );

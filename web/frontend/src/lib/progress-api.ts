@@ -5,10 +5,26 @@ export type ProgressData = {
   starred: string[];
   attempted: string[];
   activity: ActivityEntry[];
+  active_dates: string[];
+  finished_last_3_days: number;
+  finished_last_7_days: number;
+};
+
+export type LeaderboardData = {
+  rank: number;
+  total_users: number;
+  solved: number;
+  percentile: number | null;
 };
 
 export async function fetchProgress(): Promise<ProgressData | null> {
   const res = await fetch("/api/progress", { cache: "no-store" });
+  if (!res.ok) return null;
+  return res.json();
+}
+
+export async function fetchLeaderboard(): Promise<LeaderboardData | null> {
+  const res = await fetch("/api/progress/leaderboard", { cache: "no-store" });
   if (!res.ok) return null;
   return res.json();
 }

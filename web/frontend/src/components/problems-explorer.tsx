@@ -62,42 +62,6 @@ const PROGRESS_LABEL: Record<string, string> = Object.fromEntries(
   PROGRESS_OPTIONS.map((o) => [o.value, o.label]),
 );
 
-// The platform's declared taxonomy (per the README's V1 problem
-// categories), unioned with whatever tags real problems actually have.
-// Some of these won't match any problem yet — filtering to one honestly
-// shows "No problems match your filters" rather than hiding the option
-// until content catches up.
-const CANONICAL_TOOLS = [
-  "awk",
-  "chmod",
-  "cron",
-  "curl",
-  "cut",
-  "find",
-  "grep",
-  "jq",
-  "ps",
-  "sed",
-  "sort",
-  "tar",
-  "uniq",
-  "xargs",
-];
-const CANONICAL_TOPICS = [
-  "backups",
-  "batch-operations",
-  "cleanup-scripts",
-  "config-management",
-  "disk-usage",
-  "file-permissions",
-  "log-analysis",
-  "monitoring",
-  "networking",
-  "process-management",
-  "text-processing",
-  "user-management",
-];
-
 type SortKey = "id" | "title" | "difficulty";
 type Sort = { key: SortKey; dir: "asc" | "desc" } | null;
 
@@ -177,11 +141,11 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
   }
 
   const tools = useMemo(
-    () => Array.from(new Set([...CANONICAL_TOOLS, ...problems.flatMap((p) => p.tools)])).sort(),
+    () => Array.from(new Set(problems.flatMap((p) => p.tools))).sort(),
     [problems],
   );
   const topics = useMemo(
-    () => Array.from(new Set([...CANONICAL_TOPICS, ...problems.flatMap((p) => p.topics)])).sort(),
+    () => Array.from(new Set(problems.flatMap((p) => p.topics))).sort(),
     [problems],
   );
 

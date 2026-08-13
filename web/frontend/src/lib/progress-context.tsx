@@ -18,18 +18,39 @@ import {
 } from "@/lib/local-progress";
 import { fetchProgress, starProblem, unstarProblem, importLocalProgress } from "@/lib/progress-api";
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 type ProgressContextValue = {
   loaded: boolean;
   solved: Set<string>;
   starred: Set<string>;
   attempted: Set<string>;
   activity: ActivityEntry[];
+  activeDates: Set<string>;
+  finishedLast3: number;
+  finishedLast7: number;
   toggleStar: (slug: string) => void;
   recordSubmission: (slug: string, verdict: string, at: number) => void;
   // Lets Settings' "Reset coding history" update the in-memory cache
   // immediately after clearing server/local state, without a refetch.
   clearHistory: () => void;
 };
+
+// Derives the calendar heat map / finished-count fields from a capped
+// activity list — used for signed-out mode where there's no DB to
+// query directly, only the same last-15-entries local-progress.ts
+// already keeps for RecentActivity. Inherits that cap's limitation.
+function deriveFromActivity(activity: ActivityEntry[]) {
+  const activeDates = new Set(activity.map((a) => new Date(a.at).toISOString().slice(0, 10)));
+  const now = Date.now();
+  const finishedLast3 = new Set(
+    activity.filter((a) => a.verdict === "Accepted" && now - a.at <= 3 * DAY_MS).map((a) => a.slug),
+  ).size;
+  const finishedLast7 = new Set(
+    activity.filter((a) => a.verdict === "Accepted" && now - a.at <= 7 * DAY_MS).map((a) => a.slug),
+  ).size;
+  return { activeDates, finishedLast3, finishedLast7 };
+}
 
 const ProgressContext = createContext<ProgressContextValue | null>(null);
 
@@ -47,6 +68,9 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
   const [starred, setStarred] = useState<Set<string>>(new Set());
   const [attempted, setAttempted] = useState<Set<string>>(new Set());
   const [activity, setActivity] = useState<ActivityEntry[]>([]);
+  const [activeDates, setActiveDates] = useState<Set<string>>(new Set());
+  const [finishedLast3, setFinishedLast3] = useState(0);
+  const [finishedLast7, setFinishedLast7] = useState(0);
 
   useEffect(() => {
     if (authLoading) return;
@@ -60,11 +84,13 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         // localStorage, so this is always either empty or this
         // browser's own pre-existing anonymous data, never a trace of
         // an account that just logged out.
+        const localActivity = getRecentActivity();
         return {
           solved: getSolvedSlugs(),
           starred: getStarredSlugs(),
           attempted: getAttemptedSlugs(),
-          activity: getRecentActivity(),
+          activity: localActivity,
+          ...deriveFromActivity(localActivity),
         };
       }
       if (hasLegacyData()) {
@@ -77,6 +103,9 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         starred: new Set(data?.starred ?? []),
         attempted: new Set(data?.attempted ?? []),
         activity: data?.activity ?? [],
+        activeDates: new Set(data?.active_dates ?? []),
+        finishedLast3: data?.finished_last_3_days ?? 0,
+        finishedLast7: data?.finished_last_7_days ?? 0,
       };
     }
 
@@ -86,6 +115,9 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       setStarred(result.starred);
       setAttempted(result.attempted);
       setActivity(result.activity);
+      setActiveDates(result.activeDates);
+      setFinishedLast3(result.finishedLast3);
+      setFinishedLast7(result.finishedLast7);
       setLoaded(true);
     });
 
@@ -121,8 +153,11 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     }
     setActivity((prev) => [{ slug, verdict, at }, ...prev].slice(0, ACTIVITY_LIMIT));
     setAttempted((prev) => new Set(prev).add(slug));
+    setActiveDates((prev) => new Set(prev).add(new Date(at).toISOString().slice(0, 10)));
     if (verdict === "Accepted") {
       setSolved((prev) => new Set(prev).add(slug));
+      setFinishedLast3((prev) => prev + 1);
+      setFinishedLast7((prev) => prev + 1);
     }
   }
 
@@ -130,11 +165,26 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     setSolved(new Set());
     setAttempted(new Set());
     setActivity([]);
+    setActiveDates(new Set());
+    setFinishedLast3(0);
+    setFinishedLast7(0);
   }
 
   return (
     <ProgressContext.Provider
-      value={{ loaded, solved, starred, attempted, activity, toggleStar, recordSubmission, clearHistory }}
+      value={{
+        loaded,
+        solved,
+        starred,
+        attempted,
+        activity,
+        activeDates,
+        finishedLast3,
+        finishedLast7,
+        toggleStar,
+        recordSubmission,
+        clearHistory,
+      }}
     >
       {children}
     </ProgressContext.Provider>

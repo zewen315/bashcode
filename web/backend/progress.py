@@ -51,7 +51,74 @@ def get_progress(request: Request):
             cur.execute("SELECT slug FROM starred_problems WHERE user_id = %s", (user_id,))
             starred = [row[0] for row in cur.fetchall()]
 
-    return {"solved": solved, "starred": starred, "attempted": attempted, "activity": activity}
+            cur.execute(
+                """
+                SELECT DISTINCT (submitted_at AT TIME ZONE 'UTC')::date
+                FROM submissions WHERE user_id = %s
+                """,
+                (user_id,),
+            )
+            active_dates = [row[0].isoformat() for row in cur.fetchall()]
+
+            cur.execute(
+                """
+                SELECT COUNT(DISTINCT slug) FROM submissions
+                WHERE user_id = %s AND verdict = 'Accepted'
+                AND submitted_at >= now() - interval '3 days'
+                """,
+                (user_id,),
+            )
+            finished_last_3_days = cur.fetchone()[0]
+
+            cur.execute(
+                """
+                SELECT COUNT(DISTINCT slug) FROM submissions
+                WHERE user_id = %s AND verdict = 'Accepted'
+                AND submitted_at >= now() - interval '7 days'
+                """,
+                (user_id,),
+            )
+            finished_last_7_days = cur.fetchone()[0]
+
+    return {
+        "solved": solved,
+        "starred": starred,
+        "attempted": attempted,
+        "activity": activity,
+        "active_dates": active_dates,
+        "finished_last_3_days": finished_last_3_days,
+        "finished_last_7_days": finished_last_7_days,
+    }
+
+
+@router.get("/leaderboard")
+def get_leaderboard(request: Request):
+    user_id = require_user_id(request)
+    with db.pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                WITH solved_counts AS (
+                    SELECT u.id AS user_id,
+                           COUNT(DISTINCT s.slug) FILTER (WHERE s.verdict = 'Accepted') AS solved
+                    FROM users u
+                    LEFT JOIN submissions s ON s.user_id = u.id
+                    GROUP BY u.id
+                ),
+                ranked AS (
+                    SELECT user_id, solved,
+                           RANK() OVER (ORDER BY solved DESC) AS rank,
+                           COUNT(*) OVER () AS total_users
+                    FROM solved_counts
+                )
+                SELECT solved, rank, total_users FROM ranked WHERE user_id = %s
+                """,
+                (user_id,),
+            )
+            solved, rank, total_users = cur.fetchone()
+
+    percentile = round((total_users - rank) / (total_users - 1) * 100) if total_users > 1 else None
+    return {"rank": rank, "total_users": total_users, "solved": solved, "percentile": percentile}
 
 
 @router.post("/star/{slug}")
