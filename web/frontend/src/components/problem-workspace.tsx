@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import Editor from "@monaco-editor/react";
 import { Button } from "@/components/ui/button";
@@ -9,12 +9,22 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogClose,
+} from "@/components/ui/alert-dialog";
+import {
   submitSolution,
   runSolution,
   type SubmitResult,
   type ProblemSample,
 } from "@/lib/api";
 import { useProgress } from "@/lib/progress-context";
+import { getSavedCode, saveCode, clearSavedCode } from "@/lib/editor-draft";
 
 type Verdict = "Accepted" | "Wrong Answer";
 
@@ -48,6 +58,18 @@ export function ProblemWorkspace({
   const { recordSubmission } = useProgress();
   const [code, setCode] = useState(starterCode);
   const [selectedCase, setSelectedCase] = useState(0);
+
+  // Restore whatever was last typed for this problem, if anything —
+  // runs after mount since localStorage isn't available during SSR.
+  useEffect(() => {
+    const saved = getSavedCode(slug);
+    if (saved !== null) setCode(saved);
+  }, [slug]);
+
+  function handleReset() {
+    setCode(starterCode);
+    clearSavedCode(slug);
+  }
   const [bottomTab, setBottomTab] = useState<"testcase" | "result">("testcase");
 
   const [running, setRunning] = useState(false);
@@ -115,6 +137,25 @@ export function ProblemWorkspace({
         <div className="flex h-10 shrink-0 items-center justify-between border-b bg-card px-3">
           <span className="text-xs text-muted-foreground">bash</span>
           <div className="flex items-center gap-2">
+            <AlertDialog>
+              <AlertDialogTrigger
+                render={<Button size="sm" variant="outline" disabled={running || submitting} />}
+              >
+                Reset
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogTitle>Reset to starter code?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This discards your current code in the editor and can&apos;t be undone.
+                </AlertDialogDescription>
+                <AlertDialogFooter>
+                  <AlertDialogClose render={<Button variant="outline" />}>Cancel</AlertDialogClose>
+                  <AlertDialogClose render={<Button variant="destructive" onClick={handleReset} />}>
+                    Reset
+                  </AlertDialogClose>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             <Button
               size="sm"
               variant="outline"
@@ -134,7 +175,11 @@ export function ProblemWorkspace({
             defaultLanguage="shell"
             theme={resolvedTheme === "dark" ? "vs-dark" : "light"}
             value={code}
-            onChange={(value) => setCode(value ?? "")}
+            onChange={(value) => {
+              const next = value ?? "";
+              setCode(next);
+              saveCode(slug, next);
+            }}
             options={{ minimap: { enabled: false }, fontSize: 13 }}
           />
         </div>
