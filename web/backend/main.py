@@ -293,6 +293,10 @@ def _submission_details(result: dict) -> dict:
                 "name": first_failure["name"],
                 "expected": _truncate(first_failure["expected"]),
                 "actual": _truncate(first_failure["actual"]),
+                "files": [
+                    {"name": f["name"], "content": _truncate(f["content"])}
+                    for f in first_failure["files"]
+                ],
             }
             if first_failure
             else None

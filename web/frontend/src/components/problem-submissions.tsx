@@ -36,7 +36,12 @@ function submitResultToData(result: SubmitResult): SubmissionResultData {
     elapsed_seconds: result.elapsed_seconds,
     total_tests: result.tests.length,
     first_failure: firstFailure
-      ? { name: firstFailure.name, expected: firstFailure.expected, actual: firstFailure.actual }
+      ? {
+          name: firstFailure.name,
+          expected: firstFailure.expected,
+          actual: firstFailure.actual,
+          files: firstFailure.files,
+        }
       : null,
   };
 }
@@ -55,10 +60,30 @@ function SubmissionResult({ result }: { result: SubmissionResultData }) {
           All {result.total_tests} hidden tests passed.
         </p>
       ) : result.first_failure ? (
-        <div className="mt-2 flex flex-col gap-1 rounded bg-muted p-2 font-mono text-xs">
-          <p className="text-muted-foreground">{result.first_failure.name}</p>
-          <p>Expected: {JSON.stringify(result.first_failure.expected)}</p>
-          <p>Got: {JSON.stringify(result.first_failure.actual)}</p>
+        <div className="mt-2 flex flex-col gap-3">
+          <p className="text-xs text-muted-foreground">
+            Failed on {result.first_failure.name}
+          </p>
+          {result.first_failure.files.map((f) => (
+            <div key={f.name}>
+              <p className="mb-1 text-xs font-medium text-muted-foreground">{f.name}</p>
+              <pre className="overflow-x-auto rounded border bg-muted p-2 font-mono text-xs whitespace-pre-wrap">
+                {f.content}
+              </pre>
+            </div>
+          ))}
+          <div>
+            <p className="mb-1 text-xs font-medium text-muted-foreground">Expected</p>
+            <pre className="overflow-x-auto rounded border bg-muted p-2 font-mono text-xs whitespace-pre-wrap">
+              {result.first_failure.expected}
+            </pre>
+          </div>
+          <div>
+            <p className="mb-1 text-xs font-medium text-muted-foreground">Got</p>
+            <pre className="overflow-x-auto rounded border bg-muted p-2 font-mono text-xs whitespace-pre-wrap">
+              {result.first_failure.actual}
+            </pre>
+          </div>
         </div>
       ) : null}
     </div>

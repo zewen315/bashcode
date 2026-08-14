@@ -111,6 +111,7 @@ def judge(slug, submission_path, problems_dir):
             "name": test_dir.name,
             "expected": expected,
             "actual": actual,
+            "files": [{"name": name, "content": path.read_text()} for name, path in files],
             "exit_code": exit_code,
             "passed": passed,
         })

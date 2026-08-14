@@ -28,10 +28,13 @@ export type ProblemDetail = ProblemSummary & {
   samples: ProblemSample[];
 };
 
+export type TestFile = { name: string; content: string };
+
 export type TestResult = {
   name: string;
   expected: string;
   actual: string;
+  files: TestFile[];
   exit_code: string;
   passed: boolean;
 };
@@ -52,7 +55,7 @@ export type SubmissionResultData = {
   verdict: SubmitResult["verdict"];
   elapsed_seconds: number;
   total_tests: number;
-  first_failure: { name: string; expected: string; actual: string } | null;
+  first_failure: { name: string; expected: string; actual: string; files: TestFile[] } | null;
 };
 
 export async function listProblems(): Promise<ProblemSummary[]> {
