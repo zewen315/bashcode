@@ -254,7 +254,7 @@ export function ProblemWorkspace({
                           <p className="mb-1 text-xs font-medium text-muted-foreground">
                             {f.name}
                           </p>
-                          <pre className="overflow-x-auto rounded border bg-muted p-2 font-mono text-xs whitespace-pre-wrap">
+                          <pre className="max-h-56 overflow-y-auto overflow-x-auto rounded border bg-muted p-2 font-mono text-xs whitespace-pre-wrap">
                             {f.content}
                           </pre>
                         </div>
@@ -322,7 +322,7 @@ export function ProblemWorkspace({
                           <p className="mb-1 text-xs font-medium text-muted-foreground">
                             Expected
                           </p>
-                          <pre className="overflow-x-auto rounded border bg-muted p-2 font-mono text-xs whitespace-pre-wrap">
+                          <pre className="max-h-56 overflow-y-auto overflow-x-auto rounded border bg-muted p-2 font-mono text-xs whitespace-pre-wrap">
                             {sampleRun.cases[selectedResultCase].expected}
                           </pre>
                         </div>
@@ -330,7 +330,7 @@ export function ProblemWorkspace({
                           <p className="mb-1 text-xs font-medium text-muted-foreground">
                             Your Output
                           </p>
-                          <pre className="overflow-x-auto rounded border bg-muted p-2 font-mono text-xs whitespace-pre-wrap">
+                          <pre className="max-h-56 overflow-y-auto overflow-x-auto rounded border bg-muted p-2 font-mono text-xs whitespace-pre-wrap">
                             {sampleRun.cases[selectedResultCase].actual}
                           </pre>
                         </div>

@@ -67,20 +67,20 @@ function SubmissionResult({ result }: { result: SubmissionResultData }) {
           {result.first_failure.files.map((f) => (
             <div key={f.name}>
               <p className="mb-1 text-xs font-medium text-muted-foreground">{f.name}</p>
-              <pre className="overflow-x-auto rounded border bg-muted p-2 font-mono text-xs whitespace-pre-wrap">
+              <pre className="max-h-56 overflow-y-auto overflow-x-auto rounded border bg-muted p-2 font-mono text-xs whitespace-pre-wrap">
                 {f.content}
               </pre>
             </div>
           ))}
           <div>
             <p className="mb-1 text-xs font-medium text-muted-foreground">Expected</p>
-            <pre className="overflow-x-auto rounded border bg-muted p-2 font-mono text-xs whitespace-pre-wrap">
+            <pre className="max-h-56 overflow-y-auto overflow-x-auto rounded border bg-muted p-2 font-mono text-xs whitespace-pre-wrap">
               {result.first_failure.expected}
             </pre>
           </div>
           <div>
             <p className="mb-1 text-xs font-medium text-muted-foreground">Got</p>
-            <pre className="overflow-x-auto rounded border bg-muted p-2 font-mono text-xs whitespace-pre-wrap">
+            <pre className="max-h-56 overflow-y-auto overflow-x-auto rounded border bg-muted p-2 font-mono text-xs whitespace-pre-wrap">
               {result.first_failure.actual}
             </pre>
           </div>
@@ -147,7 +147,7 @@ function SubmissionRow({
               {detail.code && (
                 <div>
                   <p className="mb-1 text-xs font-medium text-muted-foreground">Submitted code</p>
-                  <pre className="overflow-x-auto rounded bg-muted p-2 font-mono text-xs whitespace-pre">
+                  <pre className="max-h-56 overflow-y-auto overflow-x-auto rounded bg-muted p-2 font-mono text-xs whitespace-pre">
                     {detail.code}
                   </pre>
                 </div>
