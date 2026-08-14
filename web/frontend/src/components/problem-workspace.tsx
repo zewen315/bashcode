@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
+import ReactMarkdown from "react-markdown";
 import { RotateCcw } from "lucide-react";
 import Editor from "@monaco-editor/react";
 import { Button } from "@/components/ui/button";
@@ -248,18 +249,24 @@ export function ProblemWorkspace({
                         </button>
                       ))}
                     </div>
-                    <div className="flex flex-col gap-3">
-                      {samples[selectedCase]?.files.map((f) => (
-                        <div key={f.name}>
-                          <p className="mb-1 text-xs font-medium text-muted-foreground">
-                            {f.name}
-                          </p>
-                          <pre className="max-h-56 overflow-y-auto overflow-x-auto rounded border bg-muted p-2 font-mono text-xs whitespace-pre-wrap">
-                            {f.content}
-                          </pre>
-                        </div>
-                      ))}
-                    </div>
+                    {samples[selectedCase]?.description ? (
+                      <article className="text-xs leading-5 text-foreground [&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_p]:mb-2 [&_p:last-child]:mb-0 [&_ul]:list-disc [&_ul]:pl-5">
+                        <ReactMarkdown>{samples[selectedCase].description}</ReactMarkdown>
+                      </article>
+                    ) : (
+                      <div className="flex flex-col gap-3">
+                        {samples[selectedCase]?.files.map((f) => (
+                          <div key={f.name}>
+                            <p className="mb-1 text-xs font-medium text-muted-foreground">
+                              {f.name}
+                            </p>
+                            <pre className="max-h-56 overflow-y-auto overflow-x-auto rounded border bg-muted p-2 font-mono text-xs whitespace-pre-wrap">
+                              {f.content}
+                            </pre>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </>
                 )}
               </div>

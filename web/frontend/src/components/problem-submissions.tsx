@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import ReactMarkdown from "react-markdown";
 import { CheckCircle2, XCircle, Clock, ChevronDown, ChevronRight, Inbox } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth-context";
@@ -41,6 +42,7 @@ function submitResultToData(result: SubmitResult): SubmissionResultData {
           expected: firstFailure.expected,
           actual: firstFailure.actual,
           files: firstFailure.files,
+          description: firstFailure.description,
         }
       : null,
   };
@@ -64,14 +66,20 @@ function SubmissionResult({ result }: { result: SubmissionResultData }) {
           <p className="text-xs text-muted-foreground">
             Failed on {result.first_failure.name}
           </p>
-          {result.first_failure.files.map((f) => (
-            <div key={f.name}>
-              <p className="mb-1 text-xs font-medium text-muted-foreground">{f.name}</p>
-              <pre className="max-h-56 overflow-y-auto overflow-x-auto rounded border bg-muted p-2 font-mono text-xs whitespace-pre-wrap">
-                {f.content}
-              </pre>
-            </div>
-          ))}
+          {result.first_failure.description ? (
+            <article className="text-xs leading-5 text-foreground [&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_p]:mb-2 [&_p:last-child]:mb-0 [&_ul]:list-disc [&_ul]:pl-5">
+              <ReactMarkdown>{result.first_failure.description}</ReactMarkdown>
+            </article>
+          ) : (
+            result.first_failure.files.map((f) => (
+              <div key={f.name}>
+                <p className="mb-1 text-xs font-medium text-muted-foreground">{f.name}</p>
+                <pre className="max-h-56 overflow-y-auto overflow-x-auto rounded border bg-muted p-2 font-mono text-xs whitespace-pre-wrap">
+                  {f.content}
+                </pre>
+              </div>
+            ))
+          )}
           <div>
             <p className="mb-1 text-xs font-medium text-muted-foreground">Expected</p>
             <pre className="max-h-56 overflow-y-auto overflow-x-auto rounded border bg-muted p-2 font-mono text-xs whitespace-pre-wrap">

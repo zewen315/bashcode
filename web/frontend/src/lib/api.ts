@@ -16,6 +16,11 @@ export type ProblemInputFile = {
 
 export type ProblemSample = {
   files: ProblemInputFile[];
+  // A hand-written override shown INSTEAD of `files` when present —
+  // see DESCRIPTION_FILENAME in judge/run_submission.py. `files` still
+  // always has the real input, since the "Run" button needs it
+  // regardless of what's actually rendered.
+  description: string | null;
   expected: string;
 };
 
@@ -35,6 +40,7 @@ export type TestResult = {
   expected: string;
   actual: string;
   files: TestFile[];
+  description: string | null;
   exit_code: string;
   passed: boolean;
 };
@@ -55,7 +61,13 @@ export type SubmissionResultData = {
   verdict: SubmitResult["verdict"];
   elapsed_seconds: number;
   total_tests: number;
-  first_failure: { name: string; expected: string; actual: string; files: TestFile[] } | null;
+  first_failure: {
+    name: string;
+    expected: string;
+    actual: string;
+    files: TestFile[];
+    description: string | null;
+  } | null;
 };
 
 export async function listProblems(): Promise<ProblemSummary[]> {

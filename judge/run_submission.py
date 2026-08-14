@@ -26,6 +26,24 @@ PIDS_LIMIT = "64"
 # one real filesystem.
 SCRATCH_DIR = os.environ.get("BASHCODE_SCRATCH_DIR")
 
+# A reserved filename, same idea as expected.out: if a test dir has one,
+# it's hand-written prose (rendered as markdown), shown to the user in
+# PLACE OF the real input files whenever present. `files` (the real
+# input, needed by e.g. the "Run" button, which echoes it straight
+# back to /run) is never touched by this — description.md is a purely
+# additive, parallel field the frontend prefers when rendering. Exists
+# because the real input isn't always fit to display raw: a filesystem
+# test's "1-setup.sh" is a script, not data, and dumping its source
+# just leaks the mechanism rather than describing the test case. Not
+# filesystem-specific — any test case can add one if its raw input
+# needs better framing.
+DESCRIPTION_FILENAME = "description.md"
+
+
+def _description(test_dir):
+    description = test_dir / DESCRIPTION_FILENAME
+    return description.read_text() if description.is_file() else None
+
 
 def run_one(submission_path, files):
     """files: ordered list of (name, host_path) tuples. Each is mounted
@@ -148,7 +166,7 @@ def judge(slug, submission_path, problems_dir):
         expected = (test_dir / "expected.out").read_text().strip()
         files = sorted(
             (p.name, p) for p in test_dir.iterdir()
-            if p.is_file() and p.name != "expected.out"
+            if p.is_file() and p.name not in ("expected.out", DESCRIPTION_FILENAME)
         )
         actual, exit_code = run_one(submission_path, files)
         actual = actual.strip()
@@ -162,6 +180,7 @@ def judge(slug, submission_path, problems_dir):
             "expected": expected,
             "actual": actual,
             "files": [{"name": name, "content": path.read_text()} for name, path in files],
+            "description": _description(test_dir),
             "exit_code": exit_code,
             "passed": passed,
         })
