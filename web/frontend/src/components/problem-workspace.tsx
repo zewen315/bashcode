@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
+import { RotateCcw } from "lucide-react";
 import Editor from "@monaco-editor/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -139,9 +140,16 @@ export function ProblemWorkspace({
           <div className="flex items-center gap-2">
             <AlertDialog>
               <AlertDialogTrigger
-                render={<Button size="sm" variant="outline" disabled={running || submitting} />}
+                render={
+                  <Button
+                    size="icon-sm"
+                    variant="outline"
+                    aria-label="Reset to starter code"
+                    disabled={running || submitting}
+                  />
+                }
               >
-                Reset
+                <RotateCcw className="size-3.5" />
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogTitle>Reset to starter code?</AlertDialogTitle>
@@ -180,7 +188,23 @@ export function ProblemWorkspace({
               setCode(next);
               saveCode(slug, next);
             }}
-            options={{ minimap: { enabled: false }, fontSize: 13 }}
+            options={{
+              minimap: { enabled: false },
+              fontSize: 13,
+              // This is a practice site — Monaco has no real bash
+              // language service behind "shell" anyway, so any
+              // autocomplete it offers is just generic word-matching
+              // from the buffer, not actually correct bash. Suggesting
+              // it would both mislead and undercut the point of typing
+              // it out from memory.
+              quickSuggestions: false,
+              suggestOnTriggerCharacters: false,
+              wordBasedSuggestions: "off",
+              parameterHints: { enabled: false },
+              hover: { enabled: "off" },
+              snippetSuggestions: "none",
+              tabCompletion: "off",
+            }}
           />
         </div>
       </ResizablePanel>
