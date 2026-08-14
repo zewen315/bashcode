@@ -17,6 +17,7 @@ import {
   type ActivityEntry,
 } from "@/lib/local-progress";
 import { fetchProgress, starProblem, unstarProblem, importLocalProgress } from "@/lib/progress-api";
+import { localDateKey } from "@/lib/date";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -42,7 +43,7 @@ type ProgressContextValue = {
 // already keeps for RecentActivity. Inherits that cap's limitation.
 function deriveFromActivity(activity: ActivityEntry[]) {
   const finishedDates = new Set(
-    activity.filter((a) => a.verdict === "Accepted").map((a) => new Date(a.at).toISOString().slice(0, 10)),
+    activity.filter((a) => a.verdict === "Accepted").map((a) => localDateKey(new Date(a.at))),
   );
   const now = Date.now();
   const finishedLast3 = new Set(
@@ -99,7 +100,12 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         await importLocalProgress(readAllLocalProgress());
         clearAllLocalProgress();
       }
-      const data = await fetchProgress();
+      // The server buckets finished_dates by calendar day in this
+      // timezone (it has no other way to know it — submitted_at is
+      // stored in UTC) — without it, a submission made in the evening
+      // in a negative-UTC-offset timezone gets attributed to tomorrow.
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const data = await fetchProgress(tz);
       return {
         solved: new Set(data?.solved ?? []),
         starred: new Set(data?.starred ?? []),
@@ -157,7 +163,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     setAttempted((prev) => new Set(prev).add(slug));
     if (verdict === "Accepted") {
       setSolved((prev) => new Set(prev).add(slug));
-      setFinishedDates((prev) => new Set(prev).add(new Date(at).toISOString().slice(0, 10)));
+      setFinishedDates((prev) => new Set(prev).add(localDateKey(new Date(at))));
       setFinishedLast3((prev) => prev + 1);
       setFinishedLast7((prev) => prev + 1);
     }

@@ -1,10 +1,13 @@
 from datetime import datetime, timezone
+from zoneinfo import available_timezones
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
 import db
 from auth import require_user_id
+
+_VALID_TIMEZONES = available_timezones()
 
 ACTIVITY_LIMIT = 15  # matches web/frontend/src/lib/local-progress.ts's ACTIVITY_LIMIT
 
@@ -23,8 +26,15 @@ class ImportRequest(BaseModel):
 
 
 @router.get("")
-def get_progress(request: Request):
+def get_progress(request: Request, tz: str = "UTC"):
     user_id = require_user_id(request)
+    # submitted_at is stored in UTC; without the caller's IANA timezone
+    # we'd bucket every submission into a UTC calendar day, which
+    # misattributes evening submissions (in negative-UTC-offset zones)
+    # to tomorrow on the activity calendar. Falls back to UTC for a
+    # missing/unrecognized zone rather than erroring the whole request.
+    if tz not in _VALID_TIMEZONES:
+        tz = "UTC"
     with db.pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute("SELECT DISTINCT slug FROM submissions WHERE user_id = %s", (user_id,))
@@ -53,10 +63,10 @@ def get_progress(request: Request):
 
             cur.execute(
                 """
-                SELECT DISTINCT (submitted_at AT TIME ZONE 'UTC')::date
+                SELECT DISTINCT (submitted_at AT TIME ZONE %s)::date
                 FROM submissions WHERE user_id = %s AND verdict = 'Accepted'
                 """,
-                (user_id,),
+                (tz, user_id),
             )
             finished_dates = [row[0].isoformat() for row in cur.fetchall()]
 

@@ -27,8 +27,8 @@ export type LeaderboardData = {
   percentile: number | null;
 };
 
-export async function fetchProgress(): Promise<ProgressData | null> {
-  const res = await fetch("/api/progress", { cache: "no-store" });
+export async function fetchProgress(tz: string): Promise<ProgressData | null> {
+  const res = await fetch(`/api/progress?tz=${encodeURIComponent(tz)}`, { cache: "no-store" });
   if (!res.ok) return null;
   return res.json();
 }

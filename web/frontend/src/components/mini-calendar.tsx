@@ -4,12 +4,9 @@ import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useProgress } from "@/lib/progress-context";
 import { cn } from "@/lib/utils";
+import { localDateKey } from "@/lib/date";
 
 const WEEKDAYS = ["S", "M", "T", "W", "T", "F", "S"];
-
-function dateKey(year: number, month: number, day: number): string {
-  return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-}
 
 export function MiniCalendar({ today }: { today: Date }) {
   const { finishedDates, finishedLast3, finishedLast7, loaded } = useProgress();
@@ -70,7 +67,7 @@ export function MiniCalendar({ today }: { today: Date }) {
         ))}
         {cells.map((day, i) => {
           const isToday = isCurrentMonth && day === today.getDate();
-          const isFinished = day !== null && finishedDates.has(dateKey(year, month, day));
+          const isFinished = day !== null && finishedDates.has(localDateKey(new Date(year, month, day)));
           return (
             <span
               key={i}
