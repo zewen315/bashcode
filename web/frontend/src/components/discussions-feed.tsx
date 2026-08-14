@@ -18,20 +18,24 @@ function FeedCard({ item, now }: { item: DiscussionFeedItem; now: number }) {
       href={`/problems/${item.slug}?tab=discussion`}
       className="group flex flex-col gap-3 rounded-xl border bg-card p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-foreground/20 hover:shadow-md"
     >
-      <div className="flex items-center gap-2.5">
-        <Avatar size="sm">
-          <AvatarImage src={item.author.avatar_url ?? undefined} />
-          <AvatarFallback className="bg-primary text-primary-foreground">
-            {initials(item.author.display_name)}
-          </AvatarFallback>
-        </Avatar>
-        <span className="text-sm font-medium">{item.author.display_name ?? "user"}</span>
-        <Badge variant="outline" className="text-muted-foreground">
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-center gap-2.5">
+          <Avatar size="sm">
+            <AvatarImage src={item.author.avatar_url ?? undefined} />
+            <AvatarFallback className="bg-primary text-primary-foreground">
+              {initials(item.author.display_name)}
+            </AvatarFallback>
+          </Avatar>
+          <span className="min-w-0 flex-1 truncate text-sm font-medium">
+            {item.author.display_name ?? "user"}
+          </span>
+          <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+            {relativeTime(item.created_at, now)}
+          </span>
+        </div>
+        <Badge variant="outline" className="ml-[2.125rem] w-fit text-muted-foreground">
           {item.problem_title ?? item.slug}
         </Badge>
-        <span className="ml-auto shrink-0 text-xs text-muted-foreground">
-          {relativeTime(item.created_at, now)}
-        </span>
       </div>
       <p className="line-clamp-2 text-sm leading-6 text-muted-foreground">{item.excerpt}</p>
       <div className="flex items-center gap-4 text-xs text-muted-foreground">
