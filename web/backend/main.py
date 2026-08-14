@@ -260,8 +260,9 @@ def get_problem(slug: str):
         "description": (problem_dir / "problem.md").read_text(),
         "starter_code": (problem_dir / "starter.sh").read_text(),
         # Always visible, no reveal gating — see
-        # docs/decisions/0009-problem-solutions.md.
-        "solution_code": (problem_dir / "solution.sh").read_text(),
+        # docs/decisions/0009-problem-solutions.md. solution.md is now
+        # the sole source for the Solution tab (each approach embeds
+        # its own code fence) — there's no separate solution.sh anymore.
         "solution_explanation": (problem_dir / "solution.md").read_text(),
         "samples": samples,
     }
