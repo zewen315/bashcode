@@ -74,6 +74,16 @@ function toggleInArray(arr: string[], value: string): string[] {
   return arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value];
 }
 
+function countBy(problems: ProblemSummary[], getTags: (p: ProblemSummary) => string[]): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const p of problems) {
+    for (const tag of getTags(p)) {
+      counts[tag] = (counts[tag] ?? 0) + 1;
+    }
+  }
+  return counts;
+}
+
 export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -148,6 +158,12 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
     () => Array.from(new Set(problems.flatMap((p) => p.topics))).sort(),
     [problems],
   );
+  // Global counts (how many problems have this tag at all) — deliberately
+  // not recomputed against the currently-filtered set, so the numbers
+  // stay stable while multi-selecting tags instead of shifting around
+  // as each click narrows the result.
+  const toolCounts = useMemo(() => countBy(problems, (p) => p.tools), [problems]);
+  const topicCounts = useMemo(() => countBy(problems, (p) => p.topics), [problems]);
 
   const activeFilterCount = [
     difficulty !== "all",
@@ -202,6 +218,7 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
       <Widget title="Tools" className="shrink-0">
         <ProblemTags
           tags={tools}
+          counts={toolCounts}
           selected={selectedTools}
           onToggle={(t) => setSelectedTools((prev) => toggleInArray(prev, t))}
         />
@@ -210,6 +227,7 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
       <Widget title="Topics" className="shrink-0">
         <ProblemTags
           tags={topics}
+          counts={topicCounts}
           selected={selectedTopics}
           onToggle={(t) => setSelectedTopics((prev) => toggleInArray(prev, t))}
         />
@@ -312,12 +330,14 @@ export function ProblemsExplorer({ problems }: { problems: ProblemSummary[] }) {
               <TagInput
                 label="Tools"
                 options={tools}
+                counts={toolCounts}
                 selected={selectedTools}
                 onChange={setSelectedTools}
               />
               <TagInput
                 label="Topics"
                 options={topics}
+                counts={topicCounts}
                 selected={selectedTopics}
                 onChange={setSelectedTopics}
               />

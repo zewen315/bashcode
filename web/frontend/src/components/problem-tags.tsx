@@ -4,10 +4,12 @@ import { cn } from "@/lib/utils";
 
 export function ProblemTags({
   tags,
+  counts,
   selected,
   onToggle,
 }: {
   tags: string[];
+  counts?: Record<string, number>;
   selected: string[];
   onToggle: (tag: string) => void;
 }) {
@@ -30,6 +32,16 @@ export function ProblemTags({
           )}
         >
           {tag}
+          {counts?.[tag] !== undefined && (
+            <span
+              className={cn(
+                "ml-1",
+                selected.includes(tag) ? "text-primary-foreground/70" : "text-muted-foreground/70",
+              )}
+            >
+              {counts[tag]}
+            </span>
+          )}
         </button>
       ))}
     </div>

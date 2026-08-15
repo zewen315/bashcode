@@ -6,11 +6,13 @@ import { X } from "lucide-react";
 export function TagInput({
   label,
   options,
+  counts,
   selected,
   onChange,
 }: {
   label: string;
   options: string[];
+  counts?: Record<string, number>;
   selected: string[];
   onChange: (next: string[]) => void;
 }) {
@@ -95,9 +97,12 @@ export function TagInput({
               key={option}
               type="button"
               onClick={() => addTag(option)}
-              className="block w-full rounded px-2 py-1.5 text-left text-xs hover:bg-accent"
+              className="flex w-full items-center justify-between rounded px-2 py-1.5 text-left text-xs hover:bg-accent"
             >
               {option}
+              {counts?.[option] !== undefined && (
+                <span className="text-muted-foreground/70">{counts[option]}</span>
+              )}
             </button>
           ))}
         </div>
