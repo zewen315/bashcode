@@ -39,6 +39,15 @@ SCRATCH_DIR = os.environ.get("BASHCODE_SCRATCH_DIR")
 # needs better framing.
 DESCRIPTION_FILENAME = "description.md"
 
+# Same idea as 1-setup.sh below: a reserved filename that changes what
+# a test case actually is. Most problems' "input" is file content
+# handed to the submission as a path — but a getopts/argument-parsing
+# problem's real input is the submission's own $@, literal flag
+# strings like "-n 5 -v", never a file at all. A single 1-args.txt
+# entry means its content should be whitespace-split and passed as
+# positional_args directly, with no mount and no file path involved.
+ARGS_FILENAME = "1-args.txt"
+
 
 def _description(test_dir):
     description = test_dir / DESCRIPTION_FILENAME
@@ -52,20 +61,33 @@ def run_one(submission_path, files):
     test folder, since that folder sits right next to expected.out and
     a directory mount would hand the submission a way to just cat it.
 
-    One exception: a single ("1-setup.sh", path) entry means this is a
-    filesystem test (find/permissions/timestamps problems), not a flat
-    data file — "1-setup.sh" so it's still a normal, valid input filename
-    under the same "<digit>-<name>" convention every other test file
-    already uses (see SafeFileName in web/backend/main.py), not a special
-    case that needs its own validation exception. 1-setup.sh is trusted
-    content (authored in bashcode-problems, never submitted by a user) —
-    it's executed directly on the host, given a fresh empty directory to
-    populate however it likes (mkdir, touch -d for specific mtimes,
-    chmod, ...), and *that* directory is what actually gets mounted, as
-    a single /sandbox/input/tree, instead of the script's own source text.
+    Two exceptions, both a single-entry `files` list with a reserved
+    name (see ARGS_FILENAME/DESCRIPTION_FILENAME above) instead of a
+    flat data file:
+
+    - A single ("1-args.txt", path) entry: an argument-parsing problem.
+      That file's content is whitespace-split and passed as
+      positional_args verbatim — no mount, no file path, since the
+      real input here is the submission's own $@.
+    - A single ("1-setup.sh", path) entry: a filesystem test
+      (find/permissions/timestamps problems), not a flat data file —
+      "1-setup.sh" so it's still a normal, valid input filename under
+      the same "<digit>-<name>" convention every other test file
+      already uses (see SafeFileName in web/backend/main.py), not a
+      special case that needs its own validation exception.
+      1-setup.sh is trusted content (authored in bashcode-problems,
+      never submitted by a user) — it's executed directly on the host,
+      given a fresh empty directory to populate however it likes
+      (mkdir, touch -d for specific mtimes, chmod, ...), and *that*
+      directory is what actually gets mounted, as a single
+      /sandbox/input/tree, instead of the script's own source text.
     """
     tree_dir = None
-    if len(files) == 1 and files[0][0] == "1-setup.sh":
+    literal_args = None
+    if len(files) == 1 and files[0][0] == ARGS_FILENAME:
+        literal_args = files[0][1].read_text().split()
+        mount_files = []
+    elif len(files) == 1 and files[0][0] == "1-setup.sh":
         tree_dir = pathlib.Path(tempfile.mkdtemp(prefix="bashcode-tree-", dir=SCRATCH_DIR))
         subprocess.run(["bash", str(files[0][1]), str(tree_dir)], check=True)
         # The sandbox always runs as a fixed low-priv user (65534), which
@@ -90,6 +112,8 @@ def run_one(submission_path, files):
             target = f"/sandbox/input/{name}"
             mount_args += ["-v", f"{host_path}:{target}:ro"]
             positional_args.append(target)
+        if literal_args is not None:
+            positional_args = literal_args
 
         cid = subprocess.run(
             [
