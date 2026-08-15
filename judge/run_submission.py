@@ -48,6 +48,26 @@ DESCRIPTION_FILENAME = "description.md"
 # positional_args directly, with no mount and no file path involved.
 ARGS_FILENAME = "1-args.txt"
 
+# Unlike ARGS_FILENAME above, this one is additive, not exclusive: a
+# test case can have both real mounted files (e.g. a hosts list) AND
+# a fixed number of literal trailing arguments (e.g. a batch size, or
+# an arbitrary command plus its own args) that aren't file content at
+# all. Content is split on NEWLINES, one argument per line — not
+# whitespace, unlike ARGS_FILENAME — specifically so a single logical
+# argument containing a space (e.g. a command arg like "production
+# cluster") can be represented as one line and survive as one arg,
+# which whitespace-splitting could never express.
+EXTRA_ARGS_FILENAME = "9-argv.txt"
+
+# Opt-in, same shape as expected.out: if present, its stripped content
+# is the exit code the submission must produce, checked IN ADDITION TO
+# stdout matching. Absent everywhere else on purpose — grading exit
+# codes by default would break plenty of already-accepted solutions
+# for problems where a nonzero exit is a legitimate side effect (e.g.
+# `grep -c` on no match), not a bug. Only meaningful for problems
+# where propagating a specific exit status is itself part of the task.
+EXPECTED_EXIT_FILENAME = "expected.exit"
+
 
 def _description(test_dir):
     description = test_dir / DESCRIPTION_FILENAME
@@ -81,9 +101,21 @@ def run_one(submission_path, files):
       (mkdir, touch -d for specific mtimes, chmod, ...), and *that*
       directory is what actually gets mounted, as a single
       /sandbox/input/tree, instead of the script's own source text.
+
+    A third, non-exclusive one: an EXTRA_ARGS_FILENAME entry can sit
+    alongside regular files (a hosts list, say) rather than replacing
+    them — its newline-split lines are appended as literal positional
+    args after every mounted file's path, for problems whose real
+    input is a mix of "a file" and "some scalars/flags/a command".
     """
     tree_dir = None
     literal_args = None
+    extra_args = []
+    extra_entry = next((f for f in files if f[0] == EXTRA_ARGS_FILENAME), None)
+    if extra_entry is not None:
+        extra_args = extra_entry[1].read_text().splitlines()
+        files = [f for f in files if f[0] != EXTRA_ARGS_FILENAME]
+
     if len(files) == 1 and files[0][0] == ARGS_FILENAME:
         literal_args = files[0][1].read_text().split()
         mount_files = []
@@ -114,6 +146,7 @@ def run_one(submission_path, files):
             positional_args.append(target)
         if literal_args is not None:
             positional_args = literal_args
+        positional_args += extra_args
 
         cid = subprocess.run(
             [
@@ -188,17 +221,24 @@ def judge(slug, submission_path, problems_dir):
     t0 = time.time()
     for test_dir in test_dirs:
         expected = (test_dir / "expected.out").read_text().strip()
+        expected_exit_path = test_dir / EXPECTED_EXIT_FILENAME
+        expected_exit = expected_exit_path.read_text().strip() if expected_exit_path.is_file() else None
         files = sorted(
             (p.name, p) for p in test_dir.iterdir()
-            if p.is_file() and p.name not in ("expected.out", DESCRIPTION_FILENAME)
+            if p.is_file()
+            and p.name not in ("expected.out", DESCRIPTION_FILENAME, EXPECTED_EXIT_FILENAME)
         )
         actual, exit_code = run_one(submission_path, files)
         actual = actual.strip()
         # Grade on stdout only — tools like `grep -c` legitimately exit
         # non-zero on "no match" even when their output is correct.
         # exit_code is still surfaced to tell a timeout apart from a
-        # plain wrong answer.
+        # plain wrong answer. expected_exit is the opt-in exception:
+        # only set for problems where a specific exit status is itself
+        # part of the task (see EXPECTED_EXIT_FILENAME above).
         passed = actual == expected and exit_code != "timeout"
+        if expected_exit is not None:
+            passed = passed and exit_code == expected_exit
         tests.append({
             "name": test_dir.name,
             "expected": expected,
@@ -206,6 +246,7 @@ def judge(slug, submission_path, problems_dir):
             "files": [{"name": name, "content": path.read_text()} for name, path in files],
             "description": _description(test_dir),
             "exit_code": exit_code,
+            "expected_exit": expected_exit,
             "passed": passed,
         })
 

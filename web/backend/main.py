@@ -24,7 +24,7 @@ import notifications
 import progress
 from ratelimit import check_rate_limit
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "judge"))
-from run_submission import DESCRIPTION_FILENAME, judge, run_input  # noqa: E402
+from run_submission import DESCRIPTION_FILENAME, EXPECTED_EXIT_FILENAME, judge, run_input  # noqa: E402
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
 DEFAULT_PROBLEMS_DIR = REPO_ROOT / "bashcode-problems"
@@ -248,7 +248,8 @@ def get_problem(slug: str):
                 {"name": f.name, "content": f.read_text()}
                 for f in sorted(
                     p for p in sample_dir.iterdir()
-                    if p.is_file() and p.name not in ("expected.out", DESCRIPTION_FILENAME)
+                    if p.is_file()
+                    and p.name not in ("expected.out", DESCRIPTION_FILENAME, EXPECTED_EXIT_FILENAME)
                 )
             ],
             # See DESCRIPTION_FILENAME in judge/run_submission.py — a
