@@ -117,6 +117,10 @@ BashCode uses cookies, local storage, or similar technologies as necessary for:
 
 These essential cookies are used regardless of the choice described below, since the service cannot function without them.
 
+## Analytics
+
+BashCode uses Umami, a self-hosted analytics tool running on our own infrastructure, to understand aggregate visitor traffic such as page views and referring sites. Umami does not use cookies or any cross-site identifier to track you, and this data is never shared with or processed by any third party — it stays on servers we operate ourselves.
+
 ## Advertising
 
 BashCode displays advertising served by Google AdSense. Depending on your location, Google's consent management platform may present you with a choice about ad personalization before any advertising cookie is set; you can update that choice at any time through the same consent dialog where it was first shown.

@@ -104,6 +104,28 @@ services:
     depends_on:
       - backend
 
+  # Self-hosted analytics (stats.{$DOMAIN}) — visitor/pageview counts,
+  # since the app itself has no analytics of its own and Postgres only
+  # ever sees signed-in activity. Uses the SAME Postgres server as
+  # everything else (a separate `umami` database on it, not a second
+  # Postgres container) — chosen over Plausible specifically for RAM:
+  # Plausible's Clickhouse dependency alone typically wants 512MB-1GB+,
+  # too much of this droplet's headroom; Umami's own footprint is
+  # ~100-200MB. The `umami` database itself is created once by hand
+  # (`CREATE DATABASE umami;`), not by this file — compose has no
+  # multi-database bootstrap hook for an existing Postgres volume.
+  umami:
+    image: ghcr.io/umami-software/umami:postgresql-latest
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-bashcode}:${POSTGRES_PASSWORD:-bashcode}@postgres:5432/umami
+      APP_SECRET: ${UMAMI_APP_SECRET}
+    expose:
+      - "3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
@@ -119,6 +141,7 @@ services:
     depends_on:
       - frontend
       - backend
+      - umami
 
 volumes:
   caddy_data:
