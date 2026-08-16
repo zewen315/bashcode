@@ -20,7 +20,6 @@ import account
 import auth
 import comments
 import db
-import problem_votes
 import notifications
 import progress
 from ratelimit import check_rate_limit
@@ -63,7 +62,6 @@ app.include_router(account.router)
 app.include_router(notifications.router)
 app.include_router(progress.router)
 app.include_router(comments.router)
-app.include_router(problem_votes.router)
 
 
 @app.on_event("startup")

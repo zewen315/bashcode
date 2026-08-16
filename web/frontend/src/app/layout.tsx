@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import { Inter, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { NavBar } from "@/components/nav-bar";
@@ -32,12 +31,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
-        <Script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9510918227818625"
-          crossOrigin="anonymous"
-          strategy="afterInteractive"
-        />
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
           <ToastProvider>
             <AuthProvider>
