@@ -4,3 +4,4 @@ pyyaml
 psycopg[binary,pool]
 Pillow
 python-multipart
+tweepy

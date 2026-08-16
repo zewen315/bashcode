@@ -17,6 +17,12 @@ FROM python:3.12-slim
 # daemon through the socket mounted at runtime.
 COPY --from=docker:27-cli /usr/local/bin/docker /usr/local/bin/docker
 
+# DejaVu Sans/Sans-Bold/Sans-Mono — the only thing social_post.py needs
+# beyond the Python deps below, for drawing the Twitter card image
+# (python:3.12-slim has no fonts at all otherwise).
+RUN apt-get update && apt-get install -y --no-install-recommends fonts-dejavu-core \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 COPY web/backend/requirements.txt web/backend/requirements.txt
 RUN pip install --no-cache-dir -r web/backend/requirements.txt

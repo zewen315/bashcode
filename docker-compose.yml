@@ -61,6 +61,13 @@ services:
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      # Only read by social_post.py (manually run via `docker compose
+      # exec backend python social_post.py ...`), not the FastAPI app
+      # itself — see docs/decisions/0019-social-posting.md.
+      TWITTER_API_KEY: ${TWITTER_API_KEY}
+      TWITTER_API_SECRET: ${TWITTER_API_SECRET}
+      TWITTER_ACCESS_TOKEN: ${TWITTER_ACCESS_TOKEN}
+      TWITTER_ACCESS_SECRET: ${TWITTER_ACCESS_SECRET}
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL}
       AVATAR_UPLOAD_DIR: /app/uploads/avatars
     volumes:
