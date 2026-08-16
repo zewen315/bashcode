@@ -108,14 +108,24 @@ We will delete or anonymize information associated with your account where reaso
 
 ## Cookies and Local Storage
 
-BashCode may use cookies, local storage, or similar technologies as necessary for:
+BashCode uses cookies, local storage, or similar technologies as necessary for:
 
 - authentication and session management;
 - security;
 - user preferences; and
 - operation of the service.
 
-If BashCode later uses non-essential analytics, advertising, or similar tracking technologies, this Privacy Policy may be updated and additional choices or notices may be provided where required.
+These essential cookies are used regardless of the choice described below, since the service cannot function without them.
+
+## Advertising
+
+BashCode displays advertising served by Google AdSense. Depending on your location, Google's consent management platform may present you with a choice about ad personalization before any advertising cookie is set; you can update that choice at any time through the same consent dialog where it was first shown.
+
+Google and its advertising partners may use cookies (including the DoubleClick/Google advertising cookie) to serve ads based on your visits to BashCode and other websites, and to measure ad performance.
+
+You can opt out of personalized advertising, independently of the choice above, through [Google Ads Settings](https://adssettings.google.com/) or, for other participating vendors, through [www.aboutads.info/choices](https://www.aboutads.info/choices/). Opting out through these tools does not mean you will see no ads, only that they will be less tailored to you.
+
+Google's own use of advertising cookies is described further at [Google's Privacy & Terms](https://policies.google.com/technologies/ads).
 
 ## Third-Party Services
 

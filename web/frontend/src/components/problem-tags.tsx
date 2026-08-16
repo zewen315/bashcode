@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const SCROLL_STEP_PX = 140;
 
 export function ProblemTags({
   tags,
@@ -16,7 +18,8 @@ export function ProblemTags({
   onToggle: (tag: string) => void;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [canScrollMore, setCanScrollMore] = useState(false);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -24,7 +27,8 @@ export function ProblemTags({
 
     function updateScrollState() {
       if (!el) return;
-      setCanScrollMore(el.scrollHeight - el.clientHeight - el.scrollTop > 4);
+      setCanScrollLeft(el.scrollLeft > 4);
+      setCanScrollRight(el.scrollWidth - el.clientWidth - el.scrollLeft > 4);
     }
 
     updateScrollState();
@@ -42,8 +46,20 @@ export function ProblemTags({
   }
 
   return (
-    <div className="relative">
-      <div ref={scrollRef} className="flex max-h-28 flex-wrap gap-1.5 overflow-y-auto">
+    <div className="flex items-center gap-1">
+      <button
+        type="button"
+        aria-label="Scroll left"
+        disabled={!canScrollLeft}
+        onClick={() => scrollRef.current?.scrollBy({ left: -SCROLL_STEP_PX, behavior: "smooth" })}
+        className={cn(
+          "shrink-0 rounded p-0.5 text-muted-foreground hover:text-foreground",
+          !canScrollLeft && "invisible",
+        )}
+      >
+        <ChevronLeft className="size-4" />
+      </button>
+      <div ref={scrollRef} className="scrollbar-hide flex flex-1 gap-1.5 overflow-x-auto scroll-smooth">
         {tags.map((tag) => (
           <button
             key={tag}
@@ -70,16 +86,18 @@ export function ProblemTags({
           </button>
         ))}
       </div>
-      {canScrollMore && (
-        <button
-          type="button"
-          aria-label="Scroll for more tags"
-          onClick={() => scrollRef.current?.scrollBy({ top: 40, behavior: "smooth" })}
-          className="pointer-events-auto absolute inset-x-0 bottom-0 flex h-6 items-end justify-center bg-gradient-to-t from-card to-transparent"
-        >
-          <ChevronDown className="size-3.5 animate-bounce text-muted-foreground" />
-        </button>
-      )}
+      <button
+        type="button"
+        aria-label="Scroll right"
+        disabled={!canScrollRight}
+        onClick={() => scrollRef.current?.scrollBy({ left: SCROLL_STEP_PX, behavior: "smooth" })}
+        className={cn(
+          "shrink-0 rounded p-0.5 text-muted-foreground hover:text-foreground",
+          !canScrollRight && "invisible",
+        )}
+      >
+        <ChevronRight className="size-4" />
+      </button>
     </div>
   );
 }

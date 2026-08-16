@@ -64,6 +64,10 @@ Additional pricing, refund rules, or other terms applicable to paid products or 
 
 Payments may be processed by third-party payment providers. BashCode does not store full payment card details handled by those providers.
 
+## Advertising
+
+BashCode may display advertising, including through Google AdSense, to help support the service. See our [Privacy Policy](/privacy) for details on the cookies involved and how to opt out.
+
 ## Service Availability
 
 BashCode is an actively developed service. Features may change, break, be suspended, or be removed, and the service may occasionally be unavailable.

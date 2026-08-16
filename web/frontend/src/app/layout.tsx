@@ -32,6 +32,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
+        {/* Consent itself is handled by Google's own "Privacy &
+            messaging" (a certified CMP), configured in the AdSense
+            dashboard — that's what decides whether/when a visitor sees
+            a consent dialog, not code here. This script load is
+            unconditional on purpose; a custom consent gate in front of
+            it would be redundant with (and could conflict with)
+            Google's own flow. */}
         <Script
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9510918227818625"
