@@ -124,7 +124,7 @@ export function ProblemWorkspace({
     setSubmitError(null);
     try {
       const res = await submitSolution(slug, code);
-      recordSubmission(slug, res.verdict, Date.now());
+      recordSubmission(slug, res.verdict, Date.now(), res.submission_id);
       onSubmitResult(res);
     } catch {
       setSubmitError("Submission failed — is the backend running?");

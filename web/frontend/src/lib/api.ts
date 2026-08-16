@@ -50,6 +50,10 @@ export type SubmitResult = {
   verdict: "Accepted" | "Wrong Answer" | "Timeout" | "No Tests Found";
   tests: TestResult[];
   elapsed_seconds: number;
+  // Only present when signed in and the DB write succeeded — lets the
+  // client's optimistic activity entry be expandable immediately,
+  // instead of only after a reload re-fetches activity from the DB.
+  submission_id?: number;
 };
 
 // The reduced shape both the live submit result and a fetched

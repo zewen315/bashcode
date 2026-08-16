@@ -349,6 +349,7 @@ def submit(req: SubmitRequest, request: Request):
                         """
                         INSERT INTO submissions (user_id, slug, verdict, details, code)
                         VALUES (%s, %s, %s, %s, %s)
+                        RETURNING id
                         """,
                         (
                             user_id,
@@ -358,6 +359,12 @@ def submit(req: SubmitRequest, request: Request):
                             req.code,
                         ),
                     )
+                    # The client's optimistic activity-feed entry needs this
+                    # to be clickable/expandable right away — without it, a
+                    # submission just made shows as a non-expandable row
+                    # until a full reload re-fetches activity (which does
+                    # include id) from the DB.
+                    result["submission_id"] = cur.fetchone()[0]
         except Exception as exc:  # noqa: BLE001
             print(f"Failed to record submission for user {user_id}: {exc}", file=sys.stderr)
 

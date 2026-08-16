@@ -31,7 +31,7 @@ type ProgressContextValue = {
   finishedLast3: number;
   finishedLast7: number;
   toggleStar: (slug: string) => void;
-  recordSubmission: (slug: string, verdict: string, at: number) => void;
+  recordSubmission: (slug: string, verdict: string, at: number, id?: number) => void;
   // Lets Settings' "Reset coding history" update the in-memory cache
   // immediately after clearing server/local state, without a refetch.
   clearHistory: () => void;
@@ -150,7 +150,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     else starProblem(slug);
   }
 
-  function recordSubmission(slug: string, verdict: string, at: number) {
+  function recordSubmission(slug: string, verdict: string, at: number, id?: number) {
     // Signed in: the server already persisted this as a side effect of
     // the /submit call that produced this verdict — this just updates
     // the local cache to match, no separate API call needed.
@@ -159,7 +159,10 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       recordActivity(slug, verdict, at);
       if (verdict === "Accepted") markSolved(slug);
     }
-    setActivity((prev) => [{ slug, verdict, at }, ...prev].slice(0, ACTIVITY_LIMIT));
+    // `id` (the DB row's id, when signed in) makes this entry
+    // expandable right away — see the ActivityEntry.id comment in
+    // local-progress.ts for why it's otherwise absent here.
+    setActivity((prev) => [{ slug, verdict, at, id }, ...prev].slice(0, ACTIVITY_LIMIT));
     setAttempted((prev) => new Set(prev).add(slug));
     if (verdict === "Accepted") {
       setSolved((prev) => new Set(prev).add(slug));
