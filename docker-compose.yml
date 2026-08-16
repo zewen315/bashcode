@@ -120,6 +120,12 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-bashcode}:${POSTGRES_PASSWORD:-bashcode}@postgres:5432/umami
       APP_SECRET: ${UMAMI_APP_SECRET}
+      # Required even with 2FA never enabled — Umami's own auth code
+      # path throws on any auth-related request (login, session check)
+      # if this is missing, surfacing as an opaque "Unauthorized" with
+      # no indication it's actually a server-side config error. Must be
+      # exactly 64 hex chars (AES-256): `openssl rand -hex 32`.
+      TWO_FACTOR_ENCRYPTION_KEY: ${UMAMI_TWO_FACTOR_ENCRYPTION_KEY}
     expose:
       - "3000"
     depends_on:
