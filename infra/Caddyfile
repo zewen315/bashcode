@@ -7,3 +7,10 @@
 		reverse_proxy frontend:3000
 	}
 }
+
+# www resolves (Cloudflare-proxied) but had no site block here, so
+# Caddy had no cert for that hostname — Cloudflare's TLS handshake to
+# origin failed outright (its 525) for every request, ads.txt included.
+www.{$DOMAIN} {
+	redir https://{$DOMAIN}{uri} permanent
+}
