@@ -218,9 +218,24 @@ def render_card(problem: dict, hook: str, sample: tuple[list[tuple[str, str]], s
     img.crop((0, 0, CARD_W, final_height)).save(out_path)
 
 
+HASHTAGS = "#Bash #Linux #100DaysOfCode"
+
+
 def build_tweet_text(problem: dict, hook: str) -> str:
+    # A framing line up front, not just the title — "Prod Services"
+    # alone tells a first-time viewer nothing about what BashCode even
+    # is. Fixed wording, not "daily": posting is manual/irregular, and
+    # a cadence claim that doesn't hold up looks worse than none.
     url = f"https://bashcode.net/problems/{problem['slug']}"
-    text = f"{problem['title']}\n\n{hook}\n\nTry it: {url}"
+    tools = ", ".join(problem.get("tools") or []) or "bash"
+    text = (
+        f"🐚 Bash/Linux practice problem:\n\n"
+        f"{problem['title']}\n\n"
+        f"{hook}\n\n"
+        f"Try it in {tools} → {url}\n"
+        f"More problems: bashcode.net\n\n"
+        f"{HASHTAGS}"
+    )
     if len(text) > 280:
         raise SystemExit(f"Tweet text is {len(text)} chars, over the 280 limit — shorten social_hook.")
     return text

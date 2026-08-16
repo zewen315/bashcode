@@ -71,6 +71,19 @@ no auto-rotation, and no "pick the next unposted problem" logic. The
   every successful post and the script prints a note if a problem was
   already posted before, but still posts again if asked — a human
   decided to run it, so a deliberate repost isn't treated as an error.
+- **Tweet text leads with a framing line, not just the problem
+  title.** First real post (just the title + hook + link) went out,
+  got deleted — with no lead-in, a first-time viewer had no idea what
+  BashCode even was. Fixed with a fixed `🐚 Bash/Linux practice
+  problem:` opener, an explicit `Try it in {tools} → {url}` (using the
+  problem's own `tools` list) instead of a bare "Try it:", a `More
+  problems: bashcode.net` pointer to the site generally (not just this
+  one problem), and three fixed hashtags (`#Bash #Linux
+  #100DaysOfCode` — capped at three deliberately, more reads as spam
+  and hurts reach). `build_tweet_text` raises if the result is still
+  over 280 chars, same as before — with the extra fixed text now
+  eating a larger fixed share of that budget, a long `social_hook`
+  will hit the limit sooner than under the old, shorter template.
 - **Twitter/X API**: `tweepy`, OAuth1 user context. Media upload is
   still v1.1-only in tweepy even for a v2-created tweet, so the script
   uses `tweepy.API.media_upload` for the image and `tweepy.Client.
