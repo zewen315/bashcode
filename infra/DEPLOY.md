@@ -43,6 +43,25 @@ correctly.
 To pick up new commits later: `git pull` in both `bashcode` and
 `bashcode-problems`, then `docker compose up -d --build` again.
 
+**Caddyfile changes need an extra step.** `infra/Caddyfile` is bind-
+mounted into the `caddy` container as a single file, and Docker
+resolves a single-file bind mount to the host file's *inode* at
+container creation — not its path. `git pull` replaces the file (new
+inode), so an already-running `caddy` container keeps serving the old
+config indefinitely; `docker compose up -d --build` doesn't recreate
+it either, since neither its image nor its compose service definition
+changed. Confirm what it's actually running with:
+```
+docker compose exec caddy cat /etc/caddy/Caddyfile
+```
+If that's stale, `docker compose exec caddy caddy reload --config
+/etc/caddy/Caddyfile` won't fix it either — it diffs against the same
+stale mount and reports "config is unchanged". The fix is to recreate
+the container so its bind mount re-resolves against the current file:
+```
+docker compose up -d --force-recreate caddy
+```
+
 ## Sanity checks after deploy
 
 ```
