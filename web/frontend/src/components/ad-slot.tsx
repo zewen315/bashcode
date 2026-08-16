@@ -8,15 +8,20 @@ import { cn } from "@/lib/utils";
 // unit; the site-wide adsbygoogle.js load happens once, there.
 const AD_CLIENT = "ca-pub-9510918227818625";
 
-// Bounds the space AdSense's async-injected content (usually an
-// iframe) is ever allowed to occupy. Without this, a "full-width-
-// responsive" unit sizing itself against a resizable split-pane panel
-// (whose width can be 0 or stale at the moment adsbygoogle.js first
-// measures it) has resized this panel's ScrollArea out from under
-// itself after the fact — the actual cause of the broken Solution-tab
-// layout/scroll reported after the ad was first added, not something
-// specific to this one ad unit.
-const AD_HEIGHT_PX = 90;
+// A fixed IAB "Banner" size (468×60), deliberately NOT the "auto" +
+// full-width-responsive format the ad unit's dashboard snippet used
+// originally. Confirmed directly (inspecting the live <ins> after
+// adsbygoogle.js processed it): a responsive unit doesn't just size
+// an inner iframe — it overwrites the <ins>'s own inline `style`
+// attribute to whatever size it picks (280px tall here), *and* the
+// wrapper around it, ignoring any height this component tried to set
+// on either. No amount of `overflow-hidden` on a wrapper stops that,
+// since the wrapper's own size gets rewritten too — that's what was
+// actually blowing out the Solution tab's layout, not a missed CSS
+// bound. A fixed-size unit has no such negotiation: it renders inside
+// exactly the box declared, or not at all.
+const AD_WIDTH_PX = 468;
+const AD_HEIGHT_PX = 60;
 
 declare global {
   interface Window {
@@ -36,13 +41,16 @@ declare global {
 // certified CMP that governs the shared adsbygoogle.js load in
 // layout.tsx — not something this component gates on its own.
 export function AdSlot({ slot, className }: { slot?: string; className?: string }) {
-  const insRef = useRef<HTMLModElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const [unfilled, setUnfilled] = useState(false);
+  const insRef = useRef<HTMLModElement>(null);
+  // Left as "pending" (blank box, no placeholder text) until AdSense
+  // resolves the request — flips to "unfilled" once it reports no
+  // fill, or after a timeout with no report at all (script blocked,
+  // e.g. an ad blocker, never sets the attribute in the first place).
+  const [status, setStatus] = useState<"pending" | "filled" | "unfilled">("pending");
 
   useEffect(() => {
-    if (!slot || !insRef.current || !wrapperRef.current) return;
-    const ins = insRef.current;
+    if (!slot || !wrapperRef.current) return;
 
     // Don't push until the wrapper actually has a measurable width —
     // pushing while a resizable panel is still at its initial/zero
@@ -55,25 +63,28 @@ export function AdSlot({ slot, className }: { slot?: string; className?: string 
       try {
         (window.adsbygoogle = window.adsbygoogle || []).push({});
       } catch {
-        // adsbygoogle.js hasn't finished loading (or was blocked) — the
-        // "unfilled" watcher below still applies if it never recovers.
+        // adsbygoogle.js hasn't finished loading (or was blocked) —
+        // the <ins> just stays empty inside its reserved box.
       }
     });
     observer.observe(wrapperRef.current);
 
-    // AdSense marks the <ins> data-ad-status="unfilled" once it's
-    // determined there's genuinely no ad to show (no fill, blocked,
-    // consent declined, etc.) — that's the signal used to collapse
-    // the slot instead of leaving permanent blank space when nothing
-    // renders.
-    const statusObserver = new MutationObserver(() => {
-      if (ins.getAttribute("data-ad-status") === "unfilled") setUnfilled(true);
+    const attrObserver = new MutationObserver(() => {
+      const value = insRef.current?.getAttribute("data-ad-status");
+      if (value === "unfilled") setStatus("unfilled");
+      else if (value === "filled") setStatus("filled");
     });
-    statusObserver.observe(ins, { attributes: true, attributeFilter: ["data-ad-status"] });
+    if (insRef.current) {
+      attrObserver.observe(insRef.current, { attributes: true, attributeFilter: ["data-ad-status"] });
+    }
+    const timeout = setTimeout(() => {
+      setStatus((current) => (current === "pending" ? "unfilled" : current));
+    }, 4000);
 
     return () => {
       observer.disconnect();
-      statusObserver.disconnect();
+      attrObserver.disconnect();
+      clearTimeout(timeout);
     };
   }, [slot]);
 
@@ -83,7 +94,7 @@ export function AdSlot({ slot, className }: { slot?: string; className?: string 
         aria-label="Advertisement"
         role="complementary"
         className={cn(
-          "flex h-[90px] items-center justify-center rounded-lg border border-dashed text-xs text-muted-foreground",
+          "flex h-[60px] items-center justify-center rounded-lg border border-dashed text-xs text-muted-foreground",
           className,
         )}
       >
@@ -92,23 +103,27 @@ export function AdSlot({ slot, className }: { slot?: string; className?: string 
     );
   }
 
-  if (unfilled) return null;
-
   return (
     <div
       ref={wrapperRef}
-      className={cn("overflow-hidden rounded-lg", className)}
-      style={{ height: AD_HEIGHT_PX }}
+      className={cn("relative overflow-hidden rounded-lg", className)}
+      style={{ height: AD_HEIGHT_PX, maxWidth: AD_WIDTH_PX }}
     >
       <ins
         ref={insRef}
-        className="adsbygoogle block"
-        style={{ display: "block", width: "100%", height: AD_HEIGHT_PX }}
+        className="adsbygoogle"
+        style={{ display: "inline-block", width: AD_WIDTH_PX, height: AD_HEIGHT_PX }}
         data-ad-client={AD_CLIENT}
         data-ad-slot={slot}
-        data-ad-format="auto"
-        data-full-width-responsive="true"
       />
+      {status === "unfilled" && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-lg border border-dashed text-xs text-muted-foreground"
+        >
+          Advertisement
+        </div>
+      )}
     </div>
   );
 }

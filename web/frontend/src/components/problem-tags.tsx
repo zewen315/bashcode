@@ -52,10 +52,7 @@ export function ProblemTags({
         aria-label="Scroll left"
         disabled={!canScrollLeft}
         onClick={() => scrollRef.current?.scrollBy({ left: -SCROLL_STEP_PX, behavior: "smooth" })}
-        className={cn(
-          "shrink-0 rounded p-0.5 text-muted-foreground hover:text-foreground",
-          !canScrollLeft && "invisible",
-        )}
+        className="shrink-0 rounded p-0.5 text-muted-foreground hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
       >
         <ChevronLeft className="size-4" />
       </button>
@@ -91,10 +88,7 @@ export function ProblemTags({
         aria-label="Scroll right"
         disabled={!canScrollRight}
         onClick={() => scrollRef.current?.scrollBy({ left: SCROLL_STEP_PX, behavior: "smooth" })}
-        className={cn(
-          "shrink-0 rounded p-0.5 text-muted-foreground hover:text-foreground",
-          !canScrollRight && "invisible",
-        )}
+        className="shrink-0 rounded p-0.5 text-muted-foreground hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
       >
         <ChevronRight className="size-4" />
       </button>

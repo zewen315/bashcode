@@ -37,7 +37,7 @@ function VoteButton({
       )}
     >
       <Icon className={cn("size-3.5", active && "fill-current")} />
-      {count > 0 && count}
+      {count}
     </button>
   );
 }
@@ -83,9 +83,9 @@ export function ProblemVotes({ slug }: { slug: string }) {
         icon={ThumbsDown}
         activeColor="border-rose-600 text-rose-600 dark:border-rose-400 dark:text-rose-400"
       />
-      {!user && !authLoading && (
-        <span className="text-xs text-muted-foreground">Sign in to vote on this problem.</span>
-      )}
+      <span className="text-xs text-muted-foreground">
+        {user ? "Vote on this problem." : "Sign in to vote on this problem."}
+      </span>
     </div>
   );
 }
