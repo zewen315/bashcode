@@ -51,6 +51,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9510918227818625"
           crossOrigin="anonymous"
         />
+        {/* Self-hosted Umami (stats.bashcode.net) — see the Analytics
+            section in /privacy. Cookieless, self-hosted, never shared
+            with a third party. Same plain-<script> reasoning as
+            AdSense above: nothing here needs React/hydration. */}
+        <script defer src="https://stats.bashcode.net/script.js" data-website-id="00799b65-905e-4f65-a011-fda1c5420089" />
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
